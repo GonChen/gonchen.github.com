@@ -1,6 +1,6 @@
 #!/bin/sh
 rm -rf public
-git clone -b master "https://gonchen:${GITHUB_TOKEN}@github.com/gonchen/gonchen.github.io.git" public
+git clone -b master "https://gonchen:${GITHUB_TOKEN}@github.com/GonChen/gonchen.github.com.git" public
 cd public
 git rm -rf *
 echo "NO JEKYLL! I LOVE HEXO" > .nojekyll
