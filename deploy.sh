@@ -6,7 +6,7 @@ git rm -rf *
 echo "NO JEKYLL! I LOVE HEXO" > .nojekyll
 cd ..
 # hexo generate
-npm run hexo r
+hexo generate
 cd public
 git add .
 
