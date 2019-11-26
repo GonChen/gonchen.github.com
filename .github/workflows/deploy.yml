@@ -1,0 +1,32 @@
+name: Compile and Deploy to GitHub Page
+
+on:
+  push:
+    branches:
+      - source
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+        ref: refs/heads/source
+
+    - uses: actions/setup-node@v1
+      with:
+        node_version: '8.x'
+
+    - name: Setup Git user info
+      run: |
+        git config --global user.email "gong_chen@qq.com"
+        git config --global user.name "gong chen"
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Compile and deploy blog
+      run: ./deploy.sh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
