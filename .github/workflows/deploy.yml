@@ -16,7 +16,7 @@ jobs:
 
     - uses: actions/setup-node@v1
       with:
-        node_version: '8.x'
+        node_version: '10.x'
 
     - name: Setup Git user info
       run: |
