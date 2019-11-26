@@ -24,7 +24,10 @@ jobs:
         git config --global user.name "gong chen"
 
     - name: Install dependencies
-      run: npm ci
+      run: |
+          npm i -g hexo-cli
+          npm i
+          npm install hexo-renderer-jade hexo-renderer-stylus --save
 
     - name: Compile and deploy blog
       run: ./deploy.sh
