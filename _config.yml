@@ -100,7 +100,7 @@ theme: butterfly
 deploy:
   type: git
   #repo: https://gitee.com/gongchen8/blog.git
-  repo: https://github.com/GonChen/gonchen.github.com.git
+  repo: https://github.com/GonChen/gonchen.github.com.git/
   branch: master
 
 jsonContent:
