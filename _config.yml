@@ -14,7 +14,7 @@ timezone: ''
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
 #url: https://gongchen8.gitee.io/blog/
-url: https://gonchen.github.io/
+url: https://gonchen.github.io
 root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
@@ -100,8 +100,10 @@ theme: butterfly
 deploy:
   type: git
   #repo: https://gitee.com/gongchen8/blog.git
-  repo: https://github.com/GonChen/gonchen.github.com.git/
+  repo: git@github.com:GonChen/gonchen.github.io.git
   branch: master
+  name: gonchen
+  email: gong_chen@qq.com
 
 jsonContent:
     meta: false
