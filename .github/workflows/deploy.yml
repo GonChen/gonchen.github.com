@@ -18,18 +18,13 @@ jobs:
       with:
         node_version: '12.x'
 
-    - name: Setup Git user info
+    - name: Compile and deploy blog
       run: |
-        git config --global user.email "gong_chen@qq.com"
-        git config --global user.name "gong chen"
-
-    - name: Install dependencies
-      run: |
+          git config --global user.email "gong_chen@qq.com"
+          git config --global user.name "gong chen"
           npm i -g hexo-cli
           npm i
           npm install hexo-renderer-jade hexo-renderer-stylus --save
-
-    - name: Compile and deploy blog
-      run: ./deploy.sh
+          ./deploy.sh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
