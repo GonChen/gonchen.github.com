@@ -25,7 +25,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           git config --global user.email "gong_chen@qq.com"
-          git config --global user.name "gong chen"
+          git config --global user.name "gonchen"
           npm i -g hexo-cli
           npm i
           npm install hexo-renderer-jade hexo-renderer-stylus --save
