@@ -56,7 +56,7 @@ copy:
 #   icon: link
 # ---------------
 social:
-  fa fa-github: https://github.com/jerryc127
+  fa fa-github: https://github.com/gonchen
   fa fa-rss: /atom.xml
 
 ####    search    ####
@@ -287,13 +287,13 @@ qihu_site_verification:
 
 # 友情鏈接界面設置 
 Flink:
-  headline: 友情鏈接
-  info_headline: 我的Blog資料
-  name: Blog 名字： JerryC
-  address: Blog 地址： https://jerryc.me/
-  avatar: Blog 頭像： https://jerryc.me/img/avatar.png
-  info: Blog 簡介： 今日事,今日畢
-  comment: 如果需要交換友鏈,請留言
+  headline: 友情连接
+  info_headline: 我的Blog资料
+  name: Blog 名字： 辰
+  address: Blog 地址： https://gonchen.github.io/
+  avatar: Blog 头像： https://gonchen.github.io/img/avatar.png
+  info: Blog 简介： 发现生活，发现乐趣
+  comment: 请多多指教
 
 # 打賞按鈕
 reward:
