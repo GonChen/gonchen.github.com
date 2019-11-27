@@ -131,15 +131,15 @@ cdn:
 # Post info settings
 # ---------------
 # avatar: /img/avatar.png
-avatar: img/avatar.png
+avatar: /img/avatar.png
 
 # the banner image of index
 # if the banner of another page not setting,it will show the top_img
-top_img: img/tiantan.png
+top_img: /img/tiantan.png
 
 #the banner image of post
 # if the post not set the post cover and post top image, it will show it
-post_img: img/post.png
+post_img: /img/post.png
 
 # the default cover of the post
 default_cover: https://cdn.jsdelivr.net/gh/jerryc127/CDN@latest/cover/default_bg.png
