@@ -5,7 +5,6 @@ cd public
 git rm -rf *
 echo "NO JEKYLL! I LOVE HEXO" > .nojekyll
 cd ..
-# hexo generate
 hexo generate
 cd public
 git add .
