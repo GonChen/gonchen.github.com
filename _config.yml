@@ -100,7 +100,7 @@ theme: butterfly
 deploy:
   type: git
   #repo: https://gitee.com/gongchen8/blog.git
-  repo: git@github.com:GonChen/gonchen.github.io.git
+  repo: git@github.com:GonChen/gonchen.github.com.git
   branch: master
   name: gonchen
   email: gong_chen@qq.com
