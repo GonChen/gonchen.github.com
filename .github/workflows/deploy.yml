@@ -20,11 +20,17 @@ jobs:
 
     - name: Compile and deploy blog
       run: |
+          mkdir -p ~/.ssh/
+          echo "$GH_ACTION_DEPLOY_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
           git config --global user.email "gong_chen@qq.com"
           git config --global user.name "gong chen"
           npm i -g hexo-cli
           npm i
           npm install hexo-renderer-jade hexo-renderer-stylus --save
-          sh deploy.sh
+          hexo g
+          hexo d
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_ACTION_DEPLOY_KEY: ${{secrets.GH_ACTION_DEPLOY_KEY}}
