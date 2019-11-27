@@ -13,8 +13,9 @@ timezone: ''
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
-url: https://gongchen8.gitee.io/blog/
-root: /blog/
+#url: https://gongchen8.gitee.io/blog/
+url: https://gonchen.github.io/
+root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 pretty_urls:
@@ -98,7 +99,8 @@ theme: butterfly
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repo: https://gitee.com/gongchen8/blog.git
+  #repo: https://gitee.com/gongchen8/blog.git
+  repo: https://github.com/GonChen/gonchen.github.com.git
   branch: master
 
 jsonContent:
