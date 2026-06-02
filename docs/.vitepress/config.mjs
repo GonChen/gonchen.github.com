@@ -6,13 +6,13 @@ export default defineConfig({
   lang: 'zh-CN',
   base: '/',
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }]
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ['link', { rel: 'alternate icon', href: '/favicon.ico', sizes: 'any' }]
   ],
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },
       { text: '归档', link: '/archives' },
-      { text: '标签', link: '/tags' },
       { text: '关于', link: '/about' },
     ],
     sidebar: [
