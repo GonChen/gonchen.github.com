@@ -9,6 +9,7 @@ npm run docs:build
 
 DEPLOY_DIR="/tmp/vitepress-deploy-$$"
 cp -r docs/.vitepress/dist "$DEPLOY_DIR"
+echo "blog.coolgpu.cn" > "$DEPLOY_DIR/CNAME"
 cd "$DEPLOY_DIR"
 
 echo "🚀 Deploying to gh-pages branch..."
