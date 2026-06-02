@@ -3,7 +3,7 @@
 layout: home
 
 hero:
-  name: "辰的博客"
+  name: "CoolGPU"
   text: "寻找乐趣,寻找生活"
   tagline: ML / GPU Kernel / 技术笔记
   actions:
