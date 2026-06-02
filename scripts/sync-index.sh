@@ -192,6 +192,25 @@ for line in "${lines[@]}"; do
     prev_year="$year"
   fi
   echo "- [$title](${link#/}) — *$date*" >> "$TMP_DIR/archive_new.md"
+  # 获取这篇文章的 tags
+  fm=$(sed -n '/^---$/,/^---$/p' "${DOCS_DIR}/${link}.md" | sed '1d;$d')
+  tags_str=""
+  if echo "$fm" | grep -qP '^tags:\s*\['; then
+    tags_str=$(echo "$fm" | grep -oP "'[^']+'" | sed "s/'//g" | tr '\n' '|')
+    tags_str="${tags_str%|}"
+  elif echo "$fm" | grep -q '^tags:'; then
+    tags_str=$(awk '/^tags:/,/^[a-zA-Z]/' "${DOCS_DIR}/${link}.md" | grep '^- ' | sed 's/^- *//' | tr '\n' '|')
+    tags_str="${tags_str%|}"
+  fi
+  if [ -n "$tags_str" ]; then
+    tag_links=""
+    IFS='|' read -ra tag_arr <<< "$tags_str"
+    for t in "${tag_arr[@]}"; do
+      encoded_t=$(echo "$t" | sed 's/ /%20/g')
+      tag_links+="[<Badge type=\"tip\" text=\"$t\" />](</archives.html#tag-$encoded_t>) "
+    done
+    echo "  $tag_links" >> "$TMP_DIR/archive_new.md"
+  fi
 done
 
 cp "$TMP_DIR/archive_new.md" "$ARCHIVE_FILE"

@@ -10,9 +10,6 @@ hero:
     - theme: brand
       text: 📖 全部文章
       link: /archives
-    - theme: alt
-      text: 🏷️ 标签
-      link: /tags
 
 features:
   - title: "Windows + tmux + Claude Code：持久化 SSH 会话工作流"
