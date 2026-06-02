@@ -1,13 +1,24 @@
-#!/bin/sh
-rm -rf public
-git clone -b master "https://gonchen:${GITHUB_TOKEN}@github.com/GonChen/gonchen.github.com.git" public
-cd public
-git rm -rf *
-echo "NO JEKYLL! I LOVE HEXO" > .nojekyll
-cd ..
-hexo generate
-cd public
-git add .
+#!/bin/bash
+# Deploy VitePress site to GitHub Pages
+set -e
 
-git commit -m "Update site on $(date -u)"
-git push origin master
+cd "$(dirname "$0")"
+
+echo "🔨 Building VitePress..."
+npm run docs:build
+
+DEPLOY_DIR="/tmp/vitepress-deploy-$$"
+cp -r docs/.vitepress/dist "$DEPLOY_DIR"
+cd "$DEPLOY_DIR"
+
+echo "🚀 Deploying to gh-pages branch..."
+touch .nojekyll
+git init
+git config user.name "chen"
+git config user.email "chen@qq.com"
+git remote add origin git@github.com:GonChen/gonchen.github.com.git
+git add -A
+git commit -m "deploy: $(date '+%Y-%m-%d %H:%M')"
+git push --force origin master
+
+echo "✅ Deployed! https://gonchen.github.io/"
