@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: "辰的博客",
+  title: "CoolGPU",
   description: "寻找乐趣,寻找生活",
   lang: 'zh-CN',
   base: '/',
