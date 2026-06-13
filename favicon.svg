@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 背景圆 -->
+  <circle cx="50" cy="50" r="48" fill="#e8f4f0"/>
+  <!-- 帽子主体 -->
+  <path d="M22 40 Q22 30 35 28 L65 28 Q78 30 78 40 L22 40Z" fill="#4a9e8e"/>
+  <!-- 帽檐 -->
+  <ellipse cx="50" cy="40" rx="30" ry="5" fill="#3d8b7c"/>
+  <!-- 头发 -->
+  <path d="M26 42 Q30 50 38 52 Q42 48 40 42" fill="#5a6b65"/>
+  <!-- 脸部轮廓 -->
+  <path d="M38 44 Q36 55 40 62 Q44 68 50 70 Q56 68 60 64 Q64 58 62 50 Q60 46 56 44" fill="none" stroke="#5a6b65" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- 眼镜 - 左圈 -->
+  <circle cx="42" cy="50" r="5" fill="none" stroke="#4a9e8e" stroke-width="1.2"/>
+  <!-- 眼镜 - 右圈 -->
+  <circle cx="54" cy="50" r="5" fill="none" stroke="#4a9e8e" stroke-width="1.2"/>
+  <!-- 眼镜 - 鼻桥 -->
+  <path d="M47 50 L49 50" stroke="#4a9e8e" stroke-width="1.2"/>
+  <!-- 眼镜腿 -->
+  <path d="M37 49 L32 47" stroke="#4a9e8e" stroke-width="0.8"/>
+  <path d="M59 49 L64 47" stroke="#4a9e8e" stroke-width="0.8"/>
+  <!-- 眼睛 -->
+  <circle cx="42" cy="50" r="1" fill="#3d8b7c"/>
+  <circle cx="54" cy="50" r="1" fill="#3d8b7c"/>
+  <!-- 鼻子 -->
+  <path d="M49 54 L50 55 L51 54" fill="none" stroke="#5a6b65" stroke-width="0.8" stroke-linecap="round"/>
+  <!-- 嘴角 -->
+  <path d="M48 57 Q50 59 52 57" fill="none" stroke="#5a6b65" stroke-width="0.8" stroke-linecap="round"/>
+  <!-- 领带 -->
+  <path d="M48 70 L50 74 L52 70" fill="none" stroke="#4a9e8e" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- 领带结 -->
+  <circle cx="50" cy="72" r="1.5" fill="#4a9e8e"/>
+</svg>
