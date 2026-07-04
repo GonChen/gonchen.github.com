@@ -20,6 +20,7 @@ git config user.email "chen@qq.com"
 git remote add origin git@github.com:GonChen/gonchen.github.com.git
 git add -A
 git commit -m "deploy: $(date '+%Y-%m-%d %H:%M')"
+git branch -M master
 git push --force origin master
 
 echo "✅ Deployed! https://gonchen.github.io/"
