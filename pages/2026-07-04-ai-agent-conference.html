@@ -2,12 +2,12 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>2026中国AI智能体大会 · 参会记实</title>
-  <meta name="date" content="2026-07-04">
+    <meta name="date" content="2026-07-04">
   <meta name="summary" content="「2026中国AI智能体大会」于7月2日至7月3日在杭州举办。本文记录开幕式及三场闭门研讨的核心收获，重点覆盖自进化智能体、Skill 群体进化与 Agent Harness 外化体系，并结合 GPU 算子 Skill 仓实践给出启示。">
   <meta name="tags" content="AI Agent, 自进化智能体, Skill, Agent Harness, GenericAgent, SkillClaw">
   <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026中国AI智能体大会 · 参会记实</title>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -267,7 +267,7 @@
     }
 
   .actions { list-style: none; }
-  .actions li {
+    .actions li {
     padding: 12px 16px;
     border-left: 3px solid var(--accent);
     background: #f8fafc;
@@ -275,6 +275,57 @@
     border-radius: 0 6px 6px 0;
     font-size: 15px;
   }
+
+  .subpage-links {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 0 0 8px;
+  }
+  .subpage-links a {
+    display: block;
+    background: var(--accent-light);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .subpage-links a:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow);
+  }
+  .subpage-links .label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .subpage-links .title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .subpage-links .count {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .slide-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid var(--accent-light);
+    background: var(--accent-light);
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .slide-link:hover { background: #d6e8f7; }
 
     hr.divider {
       border: none;
@@ -316,6 +367,7 @@
       nav.toc { position: static; }
       article { padding: 24px 20px; }
       .img-grid, .session-banners { grid-template-columns: 1fr; }
+      .subpage-links { grid-template-columns: 1fr; }
     }
 
     /* ── Site Nav ── */
@@ -390,6 +442,7 @@
         <div class="sub"><a href="#s3-platform">平台意义</a></div>
       </li>
       <li><a href="#insights">对我们的启示</a></li>
+      <li style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)"><a href="#subpages">胶片全集子页</a></li>
     </ol>
   </nav>
 
@@ -446,7 +499,29 @@
         <li><strong>多智能体群体智能</strong>——经验在 Skill 层跨 Agent、跨 Session 沉淀与复用</li>
         <li><strong>Skill 内化训练</strong>——把外化的程序性知识编译进模型权重，降低运行时 Token 成本</li>
       </ol>
-      <p>以下三节展开我认为高价值的三场分享。</p>
+      <p>以下三节展开我认为高价值的三场分享。每场均有<strong>胶片全集子页</strong>，逐页收录现场拍摄的全部 slide 及简要介绍。</p>
+    </article>
+
+    <!-- 子页入口 -->
+    <article id="subpages">
+      <h2 class="section-title">胶片全集子页</h2>
+      <div class="subpage-links">
+        <a href="/pages/2026-07-04-ai-agent-conference-ga-slides.html">
+          <div class="label">开幕式 · 肖仰华教授</div>
+          <div class="title">大模型驱动的自进化智能体</div>
+          <div class="count">54 页胶片 · GenericAgent</div>
+        </a>
+        <a href="/pages/2026-07-04-ai-agent-conference-skillclaw-slides.html">
+          <div class="label">闭门研讨 · 姬煜翔</div>
+          <div class="title">SkillClaw 群体智能</div>
+          <div class="count">16 页胶片 · 经验进化</div>
+        </a>
+        <a href="/pages/2026-07-04-ai-agent-conference-harness-slides.html">
+          <div class="label">闭门研讨 · 周宸宇</div>
+          <div class="title">模型之外的智能</div>
+          <div class="count">24 页胶片 · Agent Harness</div>
+        </a>
+      </div>
     </article>
 
     <!-- 第一节 -->
@@ -456,6 +531,7 @@
         <strong>分享人</strong>：复旦大学肖仰华教授（GenericAgent 开源项目作者）&nbsp;·&nbsp;
         <strong>场合</strong>：开幕式主题分享
       </div>
+      <a class="slide-link" href="/pages/2026-07-04-ai-agent-conference-ga-slides.html">→ 查看全部 54 页胶片</a>
       <figure>
         <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100501大.jpeg" alt="肖仰华教授开幕式分享" loading="lazy">
         <figcaption>肖仰华教授开幕式分享</figcaption>
@@ -629,6 +705,7 @@
         <strong>分享人</strong>：厦门大学博士生姬煜翔（SkillClaw 核心作者）&nbsp;·&nbsp;
         <strong>场合</strong>：自进化智能体技术研讨会
       </div>
+      <a class="slide-link" href="/pages/2026-07-04-ai-agent-conference-skillclaw-slides.html">→ 查看全部 16 页胶片</a>
       <figure>
         <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110246大.jpeg" alt="SkillClaw 分享封面" loading="lazy">
         <figcaption>SkillClaw 分享封面</figcaption>
@@ -761,6 +838,7 @@
         <strong>分享人</strong>：上海交通大学博士生周宸宇（Agent Harness 综述一作）&nbsp;·&nbsp;
         <strong>场合</strong>：Agent Harness 技术研讨会
       </div>
+      <a class="slide-link" href="/pages/2026-07-04-ai-agent-conference-harness-slides.html">→ 查看全部 24 页胶片</a>
       <figure>
         <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_134912大.jpeg" alt="Model-Harness 协同演化" loading="lazy">
         <figcaption>Model-Harness 协同演化</figcaption>
