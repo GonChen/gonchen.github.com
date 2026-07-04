@@ -63,11 +63,15 @@ Agent 向 CoolGPU 个人站点发布新 Page 时，按以下步骤操作。
 </article>
 ```
 
-### 6. 部署
+### 6. 发布
 
 ```bash
-bash deploy.sh
+git add pages/ assets/ index.html
+git commit -m "publish: 文章标题"
+git push origin master
 ```
+
+推送到 `master` 后 GitHub Pages 自动更新。
 
 ## 约定
 

@@ -17,12 +17,13 @@ Personal static site for sharing Agent-generated HTML articles. No build step �
 ├── public/                 # Site-wide static assets (favicon)
 ├── PUBLISH.md              # Agent publishing guide
 ├── CONTEXT.md              # Domain glossary
-└── deploy.sh               # Deploy to GitHub Pages
+├── CNAME                   # Custom domain for GitHub Pages
+└── .nojekyll               # Disable Jekyll processing
 ```
 
 ## Commands
 
-- `bash deploy.sh` — Deploy static files to GitHub Pages (master branch)
+- `git push origin master` — Push to GitHub Pages (publishes on push)
 - `python3 scripts/migrate-md-to-html.py` — One-time MD→HTML migration (legacy)
 
 ## Workflow
@@ -31,7 +32,7 @@ Personal static site for sharing Agent-generated HTML articles. No build step �
 2. Create `pages/YYYY-MM-DD-slug.html` with Page Meta in `<head>`
 3. Put images in `assets/YYYY-MM-DD-slug/`
 4. Manually add entry to `index.html` (see `PUBLISH.md`)
-5. Run `bash deploy.sh` to deploy
+5. `git push origin master` to publish
 
 ## Key conventions
 
