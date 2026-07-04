@@ -12,6 +12,9 @@ hero:
       link: /archives
 
 features:
+  - title: "2026中国AI智能体大会 · 参会记实"
+    details: "「2026中国AI智能体大会」于7月2日至7月3日在杭州举办。本文记录开幕式及三场闭门研讨的核心收获，重点覆盖自进化智能体、Skill 群体进化与 Agent Harness 外化体系，并结合 GPU 算子 Skill 仓实践给出启示。"
+    link: /2026/07/04/ai-agent-conference-2026
   - title: "Windows + tmux + Claude Code：持久化 SSH 会话工作流"
     details: "在本地 PC（Windows）上用 Claude Code 通过 SSH 连接远程 Linux 开发机时，网络抖动、VPN 断开、Windows 更新重启等任何中断都会导致 Claude Code 进程被 kill，宝贵的对话上下文丢失，不得不从头开始。**tmux** 完美解决了这个问题——它在远程机器上保持会话，本地客户端可以随时重连，断开也不会影响远程任务的继续执行。"
     link: /2026/06/02/windows-tmux-claude-code-ssh

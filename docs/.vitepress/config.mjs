@@ -20,6 +20,7 @@ export default defineConfig({
         text: '文章',
         items: [
           { text: 'Index', link: '/' },
+          { text: '2026中国AI智能体大会 · 参会记实', link: '/2026/07/04/ai-agent-conference-2026' },
           { text: 'Windows + tmux + Claude Code：持久化 SSH 会话工作流', link: '/2026/06/02/windows-tmux-claude-code-ssh' },
           { text: 'X 社区热议：Attention Kernel 优化趋势 (2026-05)', link: '/2026/05/31/attention-kernel-x-search-2026-05' },
           { text: 'Attention Kernel Optimization 研究报告', link: '/2026/05/31/attention-kernel-optimization-report-2026-05' },
