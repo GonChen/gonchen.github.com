@@ -7,6 +7,8 @@ title: 归档
 
 ## 2026
 
+- [2026中国AI智能体大会 · 参会记实](2026/07/04/ai-agent-conference-2026) — *2026-07-04*
+  [<Badge type="tip" text="AI Agent" />](</archives.html#tag-AI%20Agent>) [<Badge type="tip" text="自进化智能体" />](</archives.html#tag-自进化智能体>) [<Badge type="tip" text="Skill" />](</archives.html#tag-Skill>) [<Badge type="tip" text="Agent Harness" />](</archives.html#tag-Agent%20Harness>) 
 - [Windows + tmux + Claude Code：持久化 SSH 会话工作流](2026/06/02/windows-tmux-claude-code-ssh) — *2026-06-02*
   [<Badge type="tip" text="tmux" />](</archives.html#tag-tmux>) [<Badge type="tip" text="Claude Code" />](</archives.html#tag-Claude%20Code>) [<Badge type="tip" text="SSH" />](</archives.html#tag-SSH>) [<Badge type="tip" text="Windows" />](</archives.html#tag-Windows>) [<Badge type="tip" text="WSL" />](</archives.html#tag-WSL>) [<Badge type="tip" text="terminal" />](</archives.html#tag-terminal>) 
 - [X 社区热议：Attention Kernel 优化趋势 (2026-05)](2026/05/31/attention-kernel-x-search-2026-05) — *2026-05-31*
