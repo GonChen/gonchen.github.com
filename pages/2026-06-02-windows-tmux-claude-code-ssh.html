@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Windows + tmux + Claude Code：持久化 SSH 会话工作流</title>
+  <meta name="date" content="2026-06-02">
+  <meta name="summary" content=" 参考：Using tmux with Claude Code for Persistent SSH Sessions · Tmux + Claude Code + SSH Persistent Session ·">
+  <meta name="tags" content="tmux, Claude Code, SSH, Windows, WSL, terminal">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a {
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .site-nav a:hover { color: #111; }
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    img { max-width: 100%; height: auto; display: block; margin: 1rem auto; border-radius: 4px; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db;
+      color: #555;
+      background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em;
+      background: #f3f4f6;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+  
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>Windows + tmux + Claude Code：持久化 SSH 会话工作流</h1>
+    <p class="meta"><time datetime="2026-06-02">2026-06-02</time></p>
+
+    <blockquote><p>参考：<a href="https://brendanjameslynskey.github.io/TMUX_with_Claude_Code/">Using tmux with Claude Code for Persistent SSH Sessions</a> · <a href="https://treeru.com/en/blog/tmux-claude-code-ssh-persistent-session">Tmux + Claude Code + SSH Persistent Session</a> ·</p></blockquote>
+    <p>在本地 PC（Windows）上用 Claude Code 通过 SSH 连接远程 Linux 开发机时，网络抖动、VPN 断开、Windows 更新重启等任何中断都会导致 Claude Code 进程被 kill，宝贵的对话上下文丢失，不得不从头开始。<strong>tmux</strong> 完美解决了这个问题——它在远程机器上保持会话，本地客户端可以随时重连，断开也不会影响远程任务的继续执行。</p>
+    <h2>为什么需要 tmux + Claude Code</h2>
+    <p>Claude Code 是一个终端内的 AI 编程助手，它的核心优势是上下文管理能力——在一次会话中可以持续积累对项目结构、代码逻辑和任务目标的理解。但这也意味着，<strong>一旦会话中断，上下文就会丢失</strong>。</p>
+    <p>典型场景：</p>
+    <ul><li>你在 Windows 上用 WSL 或 PowerShell，<code>ssh</code> 到 Linux 开发机跑 Claude Code</li><li>网络不稳定、VPN 超时、合上笔记本盖子</li><li>SSH 连接断开 → Claude Code 进程收到 SIGHUP → 进程终止 → 下次重连只能从头开始</li></ul>
+    <p><strong>tmux 作为终端复用器</strong>，在远程机器上独立运行你的会话，不受本地连接状态影响：</p>
+    <pre><code>┌──────────────┐     SSH      ┌──────────────────┐
+│  Windows PC  │ ──────────→  │  Linux Dev Host  │
+│  (terminal)  │              │  ├─ tmux session │
+└──────────────┘              │  │  └─ claude    │
+    断开不影响 ────────→      │  └───────────────┘</code></pre>
+    <h2>基本工作流</h2>
+    <h3>1. SSH 连接到远程机器</h3>
+    <pre><code>ssh user@dev-server</code></pre>
+    <h3>2. 创建或恢复 tmux 会话</h3>
+    <pre><code># 创建新会话
+tmux new -s claude
+
+# 或者下次重连时恢复已有会话
+tmux attach -t claude
+
+# 查看所有会话
+tmux ls</code></pre>
+    <h3>3. 在 tmux 中启动 Claude Code</h3>
+    <pre><code>cd /path/to/your/project
+claude</code></pre>
+    <p>现在你可以正常使用 Claude Code。即使本地 SSH 断开：</p>
+    <ul><li><code>tmux attach -t claude</code> 回到刚才的会话</li><li>Claude Code 状态完好无损</li></ul>
+    <h3>4. 断开与重连</h3>
+    <p>本地断开 SSH（主动关闭或网络中断）后，在 tmux 中运行的所有进程继续执行。重新 SSH 连上后：</p>
+    <pre><code>ssh user@dev-server
+tmux attach -t claude</code></pre>
+    <h2>进阶技巧</h2>
+    <h3>与 VS Code 集成</h3>
+    <p>VS Code 的 Remote-SSH 插件同样可以使用 tmux：</p>
+    <ol><li><code>Ctrl+</code>` 打开 VS Code 终端（已自动 SSH 到远程）</li><li><code>tmux new -t claude -s claude</code> 创建会话</li><li><code>claude</code> 启动 Claude Code</li></ol>
+    <p>VS Code 断开重连后，终端内 tmux 会话依然存活，<code>tmux attach</code> 即可恢复。</p>
+    <h3>窗口分割 — Claude Code + 编辑器 + 终端</h3>
+    <p>tmux 真正的威力在于<strong>多面板工作流</strong>：</p>
+    <pre><code>┌──────────────────────────────────────┐
+│          Claude Code 主面板           │
+│                                      │
+│                                      │
+├───────────────────┬──────────────────┤
+│  代码阅读 / 编辑  │  编译 / 测试     │
+│  (less/vim/nvim)  │  (make/npm/go)  │
+└───────────────────┴──────────────────┘</code></pre>
+    <pre><code># 水平分割（上下）
+tmux split-window -v
+
+# 垂直分割（左右）
+tmux split-window -h
+
+# 在面板间切换
+Ctrl-b + 方向键</code></pre>
+    <p>经典工作流：左侧 Claude Code 面板，右侧上方用 <code>less</code> 或 <code>nvim</code> 阅读代码，右侧下方跑构建命令。</p>
+    <h3>滚动与搜索</h3>
+    <p>Claude Code 的输出很长时：</p>
+    <ul><li><code>Ctrl-b [</code> 进入滚动模式（Vi 方向键翻页）</li><li><code>/keyword</code> 搜索关键词</li><li><code>q</code> 退出滚动模式</li></ul>
+    <p>配合 <code>set -g history-limit 200000</code> 可保留大量历史输出（见下方配置）。</p>
+    <h2>我的 tmux 配置</h2>
+    <p>以下是 <code>~/.tmux.conf</code> 实际配置，适配 Claude Code 使用场景：</p>
+    <pre><code># --- Agent / SSH / TUI (16spc) ---
+set -g base-index 1
+setw -g pane-base-index 1
+set -g renumber-windows on
+set -g focus-events on
+set -g set-clipboard on
+set -g status-position top
+
+set -g history-limit 200000
+set -g allow-passthrough off
+set -g mouse on
+
+set -g default-terminal &quot;tmux-256color&quot;
+set -ag terminal-overrides &quot;,xterm-256color:RGB&quot;
+set -ag terminal-overrides &quot;,tmux-256color:RGB&quot;
+set -g escape-time 50
+
+setw -g mode-keys vi
+
+# prefix + Alt-r: clear stuck mouse reporting
+bind-key -n M-r run-shell &#x27;printf &quot;\033[?1000l\033[?1002l\033[?1003l\033[?1006l&quot;&#x27; \; display-message &quot;mouse escape reset&quot;
+
+# prefix + M: toggle mouse
+bind-key M set -g mouse \; display-message &quot;mouse #{?mouse,on,off}&quot;
+
+# --- TPM (prefix + I install, prefix + U update) ---
+set -g @plugin &#x27;tmux-plugins/tpm&#x27;
+set -g @plugin &#x27;tmux-plugins/tmux-resurrect&#x27;
+set -g @plugin &#x27;tmux-plugins/tmux-continuum&#x27;
+set -g @continuum-restore &#x27;on&#x27;
+run &#x27;~/.tmux/plugins/tpm/tpm&#x27;</code></pre>
+    <h3>关键配置说明</h3>
+    <div class="table-wrap"><table>
+    <tr><th>配置项</th><th>作用</th></tr>
+    <tr><td><code>focus-events on</code></td><td>允许 tmux 面板获得/失去焦点时通知应用，Claude Code 能正确响应焦点事件</td></tr>
+    <tr><td><code>history-limit 200000</code></td><td>保留 20 万行回滚历史</td></tr>
+    <tr><td><code>mouse on</code></td><td>鼠标点击切换面板、滚动</td></tr>
+    <tr><td><code>mode-keys vi</code></td><td>滚动模式下 Vi 键位（<code>j</code>/<code>k</code> 翻行, <code>Ctrl-u</code>/<code>Ctrl-d</code> 翻页）</td></tr>
+    <tr><td><code>default-terminal tmux-256color</code></td><td>256 色 + 真彩色支持，Claude Code 代码高亮正确渲染</td></tr>
+    <tr><td><code>escape-time 50</code></td><td>减少 Esc 键延迟，避免在 Vim/Neovim ESC 时产生误判</td></tr>
+    </table></div>
+    <h3>插件系统</h3>
+    <p>通过 TPM（Tmux Plugin Manager）管理两个核心插件：</p>
+    <ul><li><strong>tmux-resurrect</strong> — 保存/恢复 tmux 会话状态（面板布局、工作目录、甚至进程）</li><li><strong>tmux-continuum</strong> — 每 15 分钟自动保存，tmux 启动时自动恢复最新状态</li></ul>
+    <p>安装插件：在 tmux 内按 <code>Ctrl-b + I</code>（大写 I）。</p>
+    <h3>鼠标模式异常恢复</h3>
+    <p>偶尔 SSH 断开重连后鼠标状态会&quot;卡住&quot;（终端仍然认为鼠标处于跟踪模式），此时按 <strong><code>Alt-r</code></strong> 即可重置鼠标控制序列，无需关闭 tmux 或重连。</p>
+    <h2>Windows 端的准备</h2>
+    <p>在 Windows 上连接到远程 Linux 开发机，推荐两种方式：</p>
+    <h3>方式一：Windows Terminal + OpenSSH（推荐）</h3>
+    <p>Windows 10/11 自带 OpenSSH 客户端：</p>
+    <pre><code># 如果未安装，管理员 PowerShell：
+Add-WindowsCapability -Online -Name OpenSSH.Client*
+
+# 连接
+ssh user@dev-server</code></pre>
+    <p>配合 <a href="https://github.com/microsoft/terminal">Windows Terminal</a> 获得最佳终端体验。</p>
+    <h3>方式二：WSL</h3>
+    <p>如果已在 WSL 中工作（且 SSH key 配置在 WSL 内）：</p>
+    <pre><code># WSL 终端中
+ssh user@dev-server
+tmux new -s claude
+claude</code></pre>
+    <p>我个人的做法是在 <strong>Windows Terminal</strong> 中配置多个 Tab/Profile，WSL 和远程 SSH 各占一个 Tab，本地的 WSL 终端用于文件操作和 Git，远程 tmux 会话用于 Claude Code。</p>
+    <h2>完整工作流总结</h2>
+    <pre><code>首次建立 / 日常使用:
+
+  Windows Terminal → ssh user@dev → tmux new -s claude  →  cd project  →  claude
+                                    ↑
+                                  已有会话: tmux attach -t claude
+
+断开后重连:
+
+  Windows Terminal → ssh user@dev → tmux attach -t claude
+                                   ↑
+                             一切照旧，上下文还在</code></pre>
+    <p>这套工作流稳定运行数月，再未因 SSH 断开丢失过任何 Claude Code 上下文。</p>
+  </main>
+</body>
+</html>

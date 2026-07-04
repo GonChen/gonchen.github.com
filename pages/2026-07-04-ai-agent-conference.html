@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2026中国AI智能体大会 · 参会记实</title>
+  <meta name="date" content="2026-07-04">
+  <meta name="summary" content="「2026中国AI智能体大会」于7月2日至7月3日在杭州举办。本文记录开幕式及三场闭门研讨的核心收获，重点覆盖自进化智能体、Skill 群体进化与 Agent Harness 外化体系，并结合 GPU 算子 Skill 仓实践给出启示。">
+  <meta name="tags" content="AI Agent, 自进化智能体, Skill, Agent Harness, GenericAgent, SkillClaw">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a {
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .site-nav a:hover { color: #111; }
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    img { max-width: 100%; height: auto; display: block; margin: 1rem auto; border-radius: 4px; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db;
+      color: #555;
+      background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em;
+      background: #f3f4f6;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+  
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>2026中国AI智能体大会 · 参会记实</h1>
+    <p class="meta"><time datetime="2026-07-04">2026-07-04</time></p>
+
+    <p>「2026中国AI智能体大会」于7月2日至7月3日在杭州举办。本文记录开幕式及三场闭门研讨的核心收获，重点覆盖自进化智能体、Skill 群体进化与 Agent Harness 外化体系，并结合 GPU 算子 Skill 仓实践给出启示。</p>
+    <h2>基本情况</h2>
+    <p>主会场与分会场基本场场爆满，闭门技术研讨尤其一座难求。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/基本情况.png" alt="开幕式现场">
+    <p>整体嘉宾构成以产业界实践者和在读博士生为主，分享密度不低，但顶级学者与一线大厂核心负责人不算多——更像是智能体方向的一次「前沿实践扫盲 + 技术路线碰撞」，而非顶级峰会。对我个人而言，价值在于把自进化、Skill 群体化、Harness 外化这几条正在成形的技术脉络串了起来，且与团队正在做的算子生成/优化 Skill 仓高度相关。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/基本情况2.webp" alt="现场掠影">
+    <h2>大会日程</h2>
+    <p>大会横跨两天，三个会场并行，涵盖开幕式、十余场闭门技术研讨会及多个专题论坛。我主要参加了开幕式主题分享，以及 Coding Agent、自进化智能体、Agent Harness 三场闭门研讨会，共听取 20 余位嘉宾分享。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/大会日程.png" alt="大会日程">
+    <div class="table-wrap"><table>
+    <tr><th>我参加的场次</th><th>时间</th><th>核心议题</th></tr>
+    <tr><td>开幕式主题分享</td><td>7/2 上午</td><td>自进化智能体、GenericAgent</td></tr>
+    <tr><td>Coding Agent 技术研讨会（闭门）</td><td>7/2 下午</td><td>代码智能体工程实践</td></tr>
+    <tr><td>自进化智能体技术研讨会（闭门）</td><td>7/3 上午</td><td>SkillClaw 群体进化</td></tr>
+    <tr><td>Agent Harness 技术研讨会（闭门）</td><td>7/3 下午</td><td>模型之外的外化与协同演化</td></tr>
+    </table></div>
+    <img src="/assets/2026-07-04-ai-agent-conference/开幕式主题分享.png" alt="开幕式主题分享">
+    <img src="/assets/2026-07-04-ai-agent-conference/CodingAgent技术研讨会.png" alt="Coding Agent 技术研讨会">
+    <img src="/assets/2026-07-04-ai-agent-conference/自进化智能体技术研讨会.png" alt="自进化智能体技术研讨会">
+    <img src="/assets/2026-07-04-ai-agent-conference/AgentHarness技术研讨会.png" alt="Agent Harness 技术研讨会">
+    <h2>现场感受：三个高频方向</h2>
+    <p>贯穿多场研讨，讨论最集中的技术方向有三条：</p>
+    <ol><li><strong>自进化智能体</strong>——从静态知识系统走向动态行动系统，能力在使用中生长而非一次性设计</li><li><strong>多智能体群体智能</strong>——经验在 Skill 层跨 Agent、跨 Session 沉淀与复用</li><li><strong>Skill 内化训练</strong>——把外化的程序性知识编译进模型权重，降低运行时 Token 成本</li></ol>
+    <p>以下三节展开我认为高价值的三场分享。</p>
+    <hr>
+    <h2>一、大模型驱动的自进化智能体</h2>
+    <p><strong>分享人</strong>：复旦大学肖仰华教授（GenericAgent 开源项目作者）</p>
+    <p><strong>场合</strong>：开幕式主题分享</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100501大.jpeg" alt="肖仰华教授开幕式分享">
+    <h3>核心判断</h3>
+    <p>肖教授从 GenericAgent（GA）项目出发，提出一个清晰定位：<strong>智能体是智能的载体</strong>，大模型推动智能体从「反应式 → 目标驱动 → 自适应 → 社会智能」逐级跃迁。其中 <strong>自进化智能体（SEA）是迈向 AGI 的关键阶段</strong>——让 AI 从「知识系统」变成「行动系统」，从「身心二元」走向「身心一体」。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101113大.jpeg" alt="智能体演进四阶段">
+    <p>他用「龙虾 = 大模型 + 手脚/记忆」的比喻概括当下主流 Agent 架构：核心价值是从「作诗到做事、从聊天到干活」。但 OpenClaw 类方案的问题在于——<strong>能力靠外部堆叠，Token 消耗高，难以持续进化</strong>。</p>
+    <h3>架构要点：分层记忆 + 有机生长</h3>
+    <p>GA 的核心设计哲学是 <strong>「能力从种子生长」</strong>，而非传统工程的「蓝图建房」：</p>
+    <div class="table-wrap"><table>
+    <tr><th>层级</th><th>名称</th><th>作用</th></tr>
+    <tr><td>L0</td><td>元规则</td><td>核心公理与系统约束</td></tr>
+    <tr><td>L1</td><td>记忆索引</td><td>常驻导航层（&lt;30 行），高信噪比规划</td></tr>
+    <tr><td>L2</td><td>全局事实</td><td>稳定环境信息（路径、配置、凭证）</td></tr>
+    <tr><td>L3</td><td>任务技能</td><td>可复用 SOP / Skill 脚本</td></tr>
+    <tr><td>L4</td><td>会话归档</td><td>执行轨迹，供长期反思与回溯</td></tr>
+    </table></div>
+    <p>L4 自动归档压缩，噪声隔离后向下沉淀——用得越多，个人技能树越茂盛。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102722大.jpeg" alt="分层记忆组织">
+    <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102440大.jpeg" alt="生长哲学">
+    <p>这一点对我触动很深：<strong>Skill 是生长出来的，不是规划设计出来的。</strong> 传统做法像盖房子——先画蓝图、再按图施工；GA 的路径更像种树——播下一颗「核心种子」，在真实需求与环境交互中，技能自然萌发、分叉、茂盛。这也意味着不存在放之四海而皆准的 Skill 模板：就像每个孩子天赋秉性不同，适合的培养方式各异，<strong>不同基座模型各有长短，对其最契合的 Skill 描述与组织方式也会不同</strong>——有的模型擅长遵循步骤，有的更擅长从失败中自我修正，Skill 的形态应当随模型「性格」而演化，而非一次性写死。</p>
+    <h3>数据亮点：极低 Token + 本地内化</h3>
+    <p>实验对比显示，GA 的 Token 成本约为 OpenClaw 的 <strong>1/3～1/10</strong>，且「越做越高效」。更关键的是 <strong>本地训练闭环</strong>：把 L4 成功轨迹 → 过滤整合 → 本地微调 → 能力参数化（System-1 直觉执行），低 Token 消耗使端侧数据飞轮成为可能。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102010大.jpeg" alt="Token 消耗对比">
+    <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103346大.jpeg" alt="本地训练内化">
+    <h3>个人洞察</h3>
+    <p>这条路线与我们的算子优化场景有天然契合：算子生成/调优本身就是「在真实硬件约束下反复试错、沉淀经验」的过程。GA 的分层记忆 + 轨迹归档 + 本地内化，提供了一个可借鉴的架构范式——<strong>把每次算子优化的成功路径沉淀为 Skill，再逐步编译为模型能力</strong>。</p>
+    <p>落到团队实践，这意味着我们不应追求一套「标准算子 Skill 说明书」通吃所有模型，而应为不同基座模型保留生长空间：让 Skill 在真实编译、 profiling、调优的交互中逐步成形，观察哪类描述、哪类约束对当前模型最有效，再沉淀回 Skill 仓——<strong>生长优于设计，适配优于统一</strong>。</p>
+    <hr>
+    <h2>二、从单体智能走向群体智能</h2>
+    <p><strong>分享人</strong>：厦门大学博士生姬煜翔（SkillClaw 核心作者）</p>
+    <p><strong>场合</strong>：自进化智能体技术研讨会</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110246大.jpeg" alt="SkillClaw 分享封面">
+    <h3>核心问题：经验该在哪里共享？</h3>
+    <p>姬煜翔用一张四象限图定位了当前 Agent 生态的空白地带：</p>
+    <ul><li><strong>纵轴</strong>：上下文/记忆共享程度</li><li><strong>横轴</strong>：经验是任务内使用还是跨任务长期沉淀</li></ul>
+    <p>现有方案多落在左上（Multi-Agent 编排，如 Claude Code subagents）或左下（单体 Agent，如 OpenClaw），<strong>右下象限「Skill 群体进化」几乎无人系统性地做</strong>——这正是 SkillClaw 的切入点。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110835大.jpeg" alt="SkillClaw 四象限定位">
+    <h3>进化信号从哪来？</h3>
+    <p>SkillClaw 的设计起点是：<strong>不只看最终答案，过程中的每个反馈点都是 Skill 进化的监督信号</strong>。</p>
+    <p>两类信号源：</p>
+    <ol><li><strong>人类反馈</strong>——纠正、编辑、确认、拒绝，构成语义级 Good/Bad 信号</li><li><strong>环境反馈</strong>——工具返回的错误、权限不足、路径异常，驱动重试/重规划/补丁修复</li></ol>
+    <p>跨 Session 按 Skill 聚合对比，形成天然的 ablation：成功轨迹强化模式，失败轨迹暴露缺陷。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111043大.jpeg" alt="进化信号来源">
+    <h3>Skill 作为可治理的 AI 资源</h3>
+    <p>进化后的 Skill 不是散落在个人目录的经验文件，而是进入统一资源池：</p>
+    <ul><li><strong>生命周期</strong>：draft → review → online → offline</li><li><strong>治理维度</strong>：版本、标签、状态、审计 Trace、元数据</li><li><strong>验证闭环</strong>：进化端 Critic Agent 自动校验 + 用户端真实环境回放</li></ul>
+    <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111306大.jpeg" alt="Skill 进化后管理">
+    <h3>实验结果</h3>
+    <p>在 WildClawBench（60 个真实世界 Agent 任务）上，多轮群体进化带来稳定提升：社交互动 54%→60%，搜索检索 23%→35%，创意合成 12%→22%。过程类经验（工具调用、环境适配、错误恢复）更易沉淀，纯推理类任务收益相对较小。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111631大.jpeg" alt="WildClawBench 实验结果">
+    <h3>个人洞察</h3>
+    <p><strong>这与我们已有的公司内共享 Skill 代码仓高度同构。</strong> 我们已沉淀了算子生成、算子优化、模型适配等 Skill，SkillClaw 提供了一套「从个体经验 → 群体进化 → 可治理分发」的完整方法论。下一步值得思考的是：能否引入环境反馈信号（编译结果、性能 profile、精度验证）驱动 Skill 的自动迭代。</p>
+    <hr>
+    <h2>三、模型之外的智能</h2>
+    <p><strong>分享人</strong>：上海交通大学博士生周宸宇（Agent Harness 综述一作）</p>
+    <p><strong>场合</strong>：Agent Harness 技术研讨会</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_134912大.jpeg" alt="Model-Harness 协同演化">
+    <h3>核心框架：外化与内化协同演化</h3>
+    <p>周宸宇的综述提出了一个统一视角——<strong>智能体进化需要 Model-Harness 耦合视角</strong>：</p>
+    <ul><li>参数规模化提升基础能力，但推高场景适配成本</li><li>外部 Harness 承载工具、工作流、记忆、API、协议、Skill 库</li><li>有价值的交互轨迹可通过知识蒸馏反向注入模型</li></ul>
+    <p>形成 <strong>外化（Externalization）↔ 内化（Internalization）</strong> 的「自涉演化」闭环。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135101大.jpeg" alt="为什么智能体需要 Harness">
+    <h3>四层外化体系</h3>
+    <div class="table-wrap"><table>
+    <tr><th>外化层</th><th>本质</th><th>举例</th></tr>
+    <tr><td>Memory</td><td>外化的状态</td><td>工作上下文、情景经验、语义知识、个性化记忆</td></tr>
+    <tr><td>Skill</td><td>外化的知识</td><td>操作流程、决策启发式、规范约束</td></tr>
+    <tr><td>Protocol</td><td>外化的交互</td><td>MCP、A2A、工具调用协议</td></tr>
+    <tr><td>Harness</td><td>外化的能动性</td><td>调度、权限、观测、控制、反馈</td></tr>
+    </table></div>
+    <p>记忆层与 Skill 层存在动态转化：反复出现的程序性模式从情景轨迹中被 Harness 提升为显式可复用 Skill。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135243大.jpeg" alt="Memory 外化的状态">
+    <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135410大.jpeg" alt="Skill 外化的知识">
+    <h3>从 Textual Skill 到 Latent Skill</h3>
+    <p>周宸宇团队进一步提出 <strong>LatentSkill</strong>——把 Skill 从「注入 prompt 的文本」升级为「编译为 LoRA adapter 的潜在权重」：</p>
+    <div class="table-wrap"><table>
+    <tr><th>维度</th><th>Textual Skill</th><th>Latent Skill</th></tr>
+    <tr><td>运行成本</td><td>每步重复注入，Token 开销大</td><td>挂载 adapter，Prefill 从 1.2k→0.44k</td></tr>
+    <tr><td>安全性</td><td>明文暴露</td><td>编译进权重，低泄露风险</td></tr>
+    <tr><td>粒度</td><td>粗粒度 prompt 影响</td><td>细粒度参数级行为调控</td></tr>
+    </table></div>
+    <p>ALFWorld 实验：Seen 任务成功率 52.9%→74.3%，Unseen 56.0%→69.4%。多 Skill 组合时，<strong>语义组件对齐的 Component Merging</strong> 优于直接拼接 LoRA 或文本。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135847大.jpeg" alt="Textual vs Latent Skill">
+    <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140542大.jpeg" alt="LatentSkill 实验结果">
+    <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_141116大.jpeg" alt="Skill 组合与语义对齐">
+    <p>LatentSkill 的训练分两阶段：先用 17 万条开源 Skill 文档预训练 Compiler（text→adapter 映射），再在具体任务上微调。</p>
+    <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140215大.jpeg" alt="LatentSkill 两阶段训练">
+    <h3>个人洞察</h3>
+    <p>Harness 框架给了我们一个审视内部体系的透镜：算子生成流水线本质上就是一个 Harness——工具链、验证器、性能分析器是 Protocol/Tool，优化经验是 Skill，历史编译记录是 Memory。<strong>未来可探索的方向是把高频算子优化 Skill 通过 LatentSkill 思路编译为 adapter，降低每次优化的推理成本。</strong></p>
+    <hr>
+    <h2>对我们的启示</h2>
+    <p>结合三场分享与团队现状（GPU 算子研发 + 内部 Skill 代码仓），我的判断如下。</p>
+    <h3>行动方向</h3>
+    <ol><li><strong>Skill 内化路径</strong>——在现有算子生成/优化/适配 Skill 基础上，建立「执行轨迹归档 → 成功模式提取 → Skill 版本迭代」的闭环，参考 GA 的 L3/L4 分层与 SkillClaw 的治理流程</li><li><strong>环境反馈驱动进化</strong>——把编译结果、性能 profile、精度验证作为进化信号，替代纯人工 review，让 Skill 在使用中自动优胜劣汰</li><li><strong>关注 LatentSkill 范式</strong>——对高频、结构化的算子优化 Skill，评估从文本注入到权重编译的可行性，降低长链路优化的 Token 与延迟成本</li></ol>
+    <h3>核心判断</h3>
+    <ol><li><strong>自进化不是噱头，而是架构选择</strong>——主路径从「工程设计」转向「有机生长」，分层记忆 + 轨迹归档 + 本地内化构成完整闭环；但并非完全不规划——早期规划设计如同 RL 自进化前的监督学习，承担冷启动角色，先播下种子、搭好骨架，再在使用中放手演化。算子优化天然适合这种「先引导、后越用越强」的模式</li><li><strong>Skill 的竞争力在「群体层」</strong>——单体 Agent 的经验停留在个人，真正的壁垒是跨 Agent、跨 Session 的 Skill 沉淀、治理与分发；我们的共享 Skill 仓已具备基础，可沿进化信号与验证闭环方向持续深化</li><li><strong>模型之外的空间被严重低估</strong>——Harness（Memory / Skill / Protocol / 调度）是场景适配的主战场；Textual Skill 只是起点，Latent Skill 编译或是降本增效的下一跳</li></ol>
+  </main>
+</body>
+</html>

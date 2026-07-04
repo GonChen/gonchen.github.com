@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X 社区热议：Attention Kernel 优化趋势 (2026-05)</title>
+  <meta name="date" content="2026-05-31">
+  <meta name="summary" content=" 通过 xAI Responses API + xsearch 工具获取，搜索日期范围 2026-05-01 ~ 2026-05-31">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a {
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .site-nav a:hover { color: #111; }
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    img { max-width: 100%; height: auto; display: block; margin: 1rem auto; border-radius: 4px; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db;
+      color: #555;
+      background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em;
+      background: #f3f4f6;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+  
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>X 社区热议：Attention Kernel 优化趋势 (2026-05)</h1>
+    <p class="meta"><time datetime="2026-05-31">2026-05-31</time></p>
+
+    <blockquote><p>通过 xAI Responses API + x_search 工具获取，搜索日期范围 2026-05-01 ~ 2026-05-31</p></blockquote>
+    <h2>1. FlashAttention-4 技术分享</h2>
+    <p><strong>作者:</strong> Casey Aylward (@caseyaylward)</p>
+    <p><strong>链接:</strong> https://x.com/caseyaylward</p>
+    <p><strong>日期:</strong> 2026-05-29</p>
+    <p><strong>内容:</strong> &quot;Great technical talk by @tedzadouri on FlashAttention-4: a deep look at how attention kernels are being redesigned for NVIDIA Blackwell, where the bottleneck shifts from tensor cores to softmax + memory movement.&quot;</p>
+    <p><strong>Benchmarks:</strong> 讨论了 Blackwell 上的 kernel 重新设计，瓶颈从 Tensor Core 转向 softmax + 内存移动</p>
+    <hr>
+    <h2>2. 28× 加速 at 8192 tokens</h2>
+    <p><strong>作者:</strong> chud (@chud)</p>
+    <p><strong>链接:</strong> https://x.com/chud/status/2060566211461779944</p>
+    <p><strong>日期:</strong> 2026-05-30</p>
+    <p><strong>内容:</strong> &quot;Baseline IS FlashAttention-2. 28× speedup at 8192 tokens vs PyTorch SDPA (FA2 backend) on A100. Triton kernel skips irrelevant blocks dynamically.&quot;</p>
+    <p><strong>Benchmarks:</strong> 8192 tokens 时 28× 加速；O(N log N) prefill；稀疏 head 减少 98% KV cache</p>
+    <hr>
+    <h2>3. Nine kernels exceed 5× (up to 82×)</h2>
+    <p><strong>作者:</strong> Underfox (@Underfox3)</p>
+    <p><strong>链接:</strong> https://x.com/Underfox3/status/2059584503589339480</p>
+    <p><strong>日期:</strong> 2026-05-27</p>
+    <p><strong>内容:</strong> &quot;It is important to highlight that nine kernels exceed 5× (up to 82×), and Flash Attention achieves 2×–13.3× speedups across all tested configurations without regression.&quot;</p>
+    <p><strong>Engagement:</strong> 4 likes, 1 repost, 247 views</p>
+    <hr>
+    <h2>4. Parallax — 新 attention 机制超越 FlashAttention</h2>
+    <p><strong>作者:</strong> cv usk (@cv_usk)</p>
+    <p><strong>链接:</strong> https://x.com/cv_usk/status/2060863525132857569</p>
+    <p><strong>日期:</strong> 2026-05-30</p>
+    <p><strong>内容:</strong> &quot;Parallax (Parameterized Local Linear Attention) custom decode kernel matches or exceeds FlashAttention 2 and 3 throughput. Better perplexity at 0.6B-1.7B params.&quot;</p>
+    <p><strong>Benchmarks:</strong> Throughput 与 FA2/FA3 相当；学习效率更高（更低 perplexity）</p>
+    <hr>
+    <h2>5. Lighthouse Attention (Nous Research)</h2>
+    <p><strong>作者:</strong> Nous Research (@NousResearch)</p>
+    <p><strong>链接:</strong> https://x.com/NousResearch/status/2055337939270332862</p>
+    <p><strong>日期:</strong> 2026-05-15</p>
+    <p><strong>内容:</strong> &quot;Today we release Lighthouse Attention, a selection-based hierarchical attention for long-context pre-training that delivers a 1.4-1.7× wall-clock speedup at 98K context. It runs the same forward+backward pass ~17× faster than standard attention at 512K context on a single B200 (Blackwell).&quot;</p>
+    <p><strong>Engagement:</strong> 2,018 likes · 231 reposts · 982 bookmarks · 159K views</p>
+    <hr>
+    <h2>6. FlashQLA by Qwen Team</h2>
+    <p><strong>作者:</strong> @chenzeling4</p>
+    <p><strong>链接:</strong> https://x.com/chenzeling4/status/2051192336093212921</p>
+    <p><strong>日期:</strong> 2026-05-04</p>
+    <p><strong>内容:</strong> &quot;FlashQLA by Qwen: High-performance linear attention kernel library. 2-3× forward and 2× backward speedup over FLA Triton on NVIDIA Hopper. Gate-driven intra-card context parallelism. TileLang fused warp-specialized kernels.&quot;</p>
+    <p><strong>作者:</strong> @andresvilarino</p>
+    <p><strong>链接:</strong> https://x.com/andresvilarino/status/2050502429133717872</p>
+    <p><strong>日期:</strong> 2026-05-02</p>
+    <p><strong>内容:</strong> &quot;Qwen Team Releases FlashQLA: a High-Performance Linear Attention Kernel Library That Achieves Up to 3× Speedup on NVIDIA Hopper GPUs&quot;</p>
+    <hr>
+    <h2>7. FlashLib — FlashAttention 风格 GPU 库 for Classical ML</h2>
+    <p><strong>作者:</strong> Shuo Yang (@ShuoYang)</p>
+    <p><strong>链接:</strong> https://x.com/ShuoYang/status/2059441289763139677</p>
+    <p><strong>日期:</strong> 2026-05-27</p>
+    <p><strong>内容:</strong> &quot;FlashLib (from Flash-KMeans team): GPU library with FlashAttention-style kernels for classical ML. Up to 26× KMeans, 19× KNN etc. over cuML.&quot;</p>
+    <p><strong>Benchmarks:</strong></p>
+    <ul><li>KMeans: 26× over cuML</li><li>KNN: 19× over cuML</li><li>HDBSCAN: 40× over cuML</li><li>TruncatedSVD: 208× over cuML</li></ul>
+    <hr>
+    <h2>汇总 Benchmarks</h2>
+    <div class="table-wrap"><table>
+    <tr><th>项目</th><th>加速比</th><th>硬件</th><th>日期</th></tr>
+    <tr><td>FlashAttention vs SDPA (8192 tokens)</td><td>28×</td><td>A100</td><td>May 30</td></tr>
+    <tr><td>FlashAttention speedups</td><td>2×–13.3×</td><td>多平台</td><td>May 27</td></tr>
+    <tr><td>Lighthouse Attention @ 98K ctx</td><td>1.4–1.7×</td><td>B200</td><td>May 15</td></tr>
+    <tr><td>Lighthouse Attention @ 512K ctx</td><td>~17×</td><td>B200</td><td>May 15</td></tr>
+    <tr><td>FlashQLA Forward (vs FLA Triton)</td><td>2–3×</td><td>H200</td><td>May 2-4</td></tr>
+    <tr><td>FlashQLA Backward (vs FLA Triton)</td><td>2×</td><td>H200</td><td>May 2-4</td></tr>
+    <tr><td>Parallax decode (vs FA2/FA3)</td><td>competitive</td><td>-</td><td>May 30</td></tr>
+    </table></div>
+    <hr>
+    <blockquote><p>保存时间: 2026-05-31</p></blockquote>
+    <blockquote><p>来源: xAI Responses API (grok-4-1-fast) + x_search tool</p></blockquote>
+  </main>
+</body>
+</html>
