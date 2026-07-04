@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+    <meta name="date" content="2026-07-04">
+  <meta name="summary" content="「2026中国AI智能体大会」于7月2日至7月3日在杭州举办。本文记录开幕式及三场闭门研讨的核心收获，重点覆盖自进化智能体、Skill 群体进化与 Agent Harness 外化体系，并结合 GPU 算子 Skill 仓实践给出启示。">
+  <meta name="tags" content="AI Agent, 自进化智能体, Skill, Agent Harness, GenericAgent, SkillClaw">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模型之外的智能 · Agent Harness 胶片全集</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --paper: #ffffff;
+      --ink: #1a2332;
+      --muted: #5c6b7f;
+      --accent: #0d4f8b;
+      --accent-light: #e8f1fa;
+      --border: #dde3ea;
+      --highlight: #c45c26;
+      --radius: 10px;
+      --shadow: 0 2px 16px rgba(26, 35, 50, 0.07);
+      --max: 860px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.75;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .cover {
+      background: linear-gradient(145deg, #0a2d52 0%, #0d4f8b 55%, #1a6aab 100%);
+      color: #fff;
+      padding: 64px 24px 56px;
+      text-align: center;
+    }
+    .cover-tag {
+      display: inline-block;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.75;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 4px 14px;
+      border-radius: 20px;
+    }
+    .cover h1 {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 16px;
+    }
+    .cover-meta {
+      font-size: 14px;
+      opacity: 0.8;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .cover-back {
+      margin-top: 24px;
+    }
+    .cover-back a {
+      color: rgba(255,255,255,0.9);
+      text-decoration: none;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.4);
+      transition: opacity 0.15s;
+    }
+    .cover-back a:hover { opacity: 0.75; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 32px;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    nav.toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    nav.toc h2 {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    nav.toc ol { list-style: none; counter-reset: toc; }
+    nav.toc li { margin-bottom: 4px; counter-increment: toc; }
+    nav.toc a {
+      color: var(--muted);
+      text-decoration: none;
+      display: block;
+      padding: 3px 6px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    nav.toc a::before {
+      content: counter(toc) ". ";
+      color: var(--accent);
+      font-weight: 600;
+    }
+    nav.toc a:hover { color: var(--accent); background: var(--accent-light); }
+
+    main { min-width: 0; }
+
+    article {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px 40px;
+      margin-bottom: 24px;
+    }
+
+    .slide-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .slide-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 36px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .slide-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
+      flex: 1;
+      min-width: 200px;
+    }
+    .slide-time {
+      font-size: 13px;
+      color: var(--muted);
+      background: var(--accent-light);
+      padding: 2px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
+    p { margin-bottom: 14px; color: #2d3a4a; }
+    p:last-child { margin-bottom: 0; }
+
+    figure { margin: 20px 0 0; }
+    figure img {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      display: block;
+      cursor: zoom-in;
+      transition: box-shadow 0.2s;
+    }
+    figure img:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+    figcaption {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .intro-note {
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      cursor: zoom-out;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: 95vw;
+      max-height: 92vh;
+      border-radius: 6px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    @media print {
+      nav.toc { display: none; }
+      .layout { display: block; padding: 0; }
+      article { box-shadow: none; border: none; padding: 20px 0; page-break-inside: avoid; }
+      .cover { padding: 32px; }
+      figure img { max-height: 320px; object-fit: contain; }
+    }
+
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      nav.toc { position: static; max-height: none; }
+      article { padding: 24px 20px; }
+    }
+
+    /* ── Site Nav ── */
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(10, 45, 82, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .site-nav a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .site-nav a:hover { color: #fff; }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav"><a href="/">← CoolGPU</a></nav>
+
+<header class="cover">
+  <div class="cover-tag">Agent Harness 技术研讨会 · 胶片全集</div>
+  <h1>模型之外的智能<br>Agent Harness 胶片全集</h1>
+  <div class="cover-meta">
+    <span>分享人：周宸宇（上海交大 / Harness 综述一作）</span>
+    <span>2026.07.03 · Agent Harness 研讨会</span>
+  </div>
+  <div class="cover-back">
+    <a href="/pages/2026-07-04-ai-agent-conference.html">← 返回参会记实</a>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <h2>目录 · 24 页</h2>
+    <ol>
+      <li><a href="#slide-01">耦合视角</a></li>
+      <li><a href="#slide-02">为何需要 Harness</a></li>
+      <li><a href="#slide-03">Memory 外化</a></li>
+      <li><a href="#slide-04">Skill 外化</a></li>
+      <li><a href="#slide-05">Protocols 外化</a></li>
+      <li><a href="#slide-06">Harness 认知环境</a></li>
+      <li><a href="#slide-07">Latent Skills 章节</a></li>
+      <li><a href="#slide-08">Textual → Latent</a></li>
+      <li><a href="#slide-09">方法定义</a></li>
+      <li><a href="#slide-10">训练 Stage 1</a></li>
+      <li><a href="#slide-11">训练 Stage 2</a></li>
+      <li><a href="#slide-12">实验设置</a></li>
+      <li><a href="#slide-13">ALFWorld 结果</a></li>
+      <li><a href="#slide-14">Search-QA 结果</a></li>
+      <li><a href="#slide-15">低秩有效性</a></li>
+      <li><a href="#slide-16">语义几何</a></li>
+      <li><a href="#slide-17">强度可调</a></li>
+      <li><a href="#slide-18">技能组合</a></li>
+      <li><a href="#slide-19">鲁棒与安全</a></li>
+      <li><a href="#slide-20">外化与内化之间</a></li>
+      <li><a href="#slide-21">平台意义</a></li>
+      <li><a href="#slide-22">协同演化路线图</a></li>
+      <li><a href="#slide-23">未来方向</a></li>
+      <li><a href="#slide-24">致谢</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <p class="intro-note">按拍摄时间顺序整理的 24 张现场胶片，对应周宸宇在 Agent Harness 闭门研讨会上的完整分享。前半部分为 Harness 外化理论框架（Memory / Skill / Protocol），后半部分介绍 LatentSkill 方法与实验。</p>
+
+    <article id="slide-01">
+      <div class="slide-header">
+        <span class="slide-num">1</span>
+        <h2 class="slide-title">智能体进化的耦合视角</h2>
+        <span class="slide-time">13:49</span>
+      </div>
+      <p>周宸宇提出：智能体进化需要全新的 Model-Harness 耦合视角。模型参数扩张提升基础能力，但场景适配成本同步上升；外部 Harness 承载工具、记忆、工作流、API、协议与 Skill 库，是快速适配真实环境的核心支撑。图中「外部化」与「内化」形成闭环——有价值的交互轨迹经蒸馏回注模型，成功模式逐步内化为模型原生能力。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_134912大.jpeg" alt="第 1 页：智能体进化的耦合视角" loading="lazy">
+        <figcaption>第 1 页 · 13:49 · Model-Harness 协同演化</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-02">
+      <div class="slide-header">
+        <span class="slide-num">2</span>
+        <h2 class="slide-title">外部化：为什么智能体需要 Harness</h2>
+        <span class="slide-time">13:51</span>
+      </div>
+      <p>引用认知科学家 Donald Norman 的观点：认知制品不改变人类能力，而是改变任务本身。外部化将跨时间状态放到 Memory、将任务流程写成 Skill、将交互结构化为 Protocol，Harness 负责调度、权限、观测、控制与反馈。底部技术图谱将 PaLM、GPT-4、RAG、MCP 等归入 Weights / Context / Harness 三层，展示社区重心从权重层向 Harness 层迁移。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135101大.jpeg" alt="第 2 页：为什么智能体需要 Harness" loading="lazy">
+        <figcaption>第 2 页 · 13:51 · Externalization 统一综述</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-03">
+      <div class="slide-header">
+        <span class="slide-num">3</span>
+        <h2 class="slide-title">Memory：外化的状态</h2>
+        <span class="slide-time">13:52</span>
+      </div>
+      <p>Memory 外化解决智能体的「时间负担」。四层外化状态依次为：Working Context（当前任务活跃中间态）、Episodic Experience（先前运行记录）、Semantic Knowledge（跨 episode 的抽象知识）、Personalized Memory（用户/团队/环境的稳定信息）。架构图展示从原始上下文经分层编排、OS 式热冷交换到 Harness 集成的完整链路。反复出现的程序性规律可从情景轨迹提升为显式 Skill。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135243大.jpeg" alt="第 3 页：Memory 外化的状态" loading="lazy">
+        <figcaption>第 3 页 · 13:52 · Externalized State: Memory</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-04">
+      <div class="slide-header">
+        <span class="slide-num">4</span>
+        <h2 class="slide-title">Skill：外化的知识与程序性载体</h2>
+        <span class="slide-time">13:54</span>
+      </div>
+      <p>Skill 外化解决「每次临场重构工作流」的负担，将操作步骤、决策启发式与规范约束固化为可复用工件。获取路径包括人工编写、从记忆蒸馏、环境探索发现与组合构建；运行时 Memory 提供情境证据，Tools/Protocols 提供执行接口，Skill 组织任务流程。页底抛出开放问题：Skill 作为程序性知识载体，运行时是否必须以文本形式注入 context？</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135410大.jpeg" alt="第 4 页：Skill 外化的知识" loading="lazy">
+        <figcaption>第 4 页 · 13:54 · Externalized Expertise: Skills</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-05">
+      <div class="slide-header">
+        <span class="slide-num">5</span>
+        <h2 class="slide-title">Protocols：外化的交互</h2>
+        <span class="slide-time">13:55</span>
+      </div>
+      <p>Protocol 层回答「外化 Memory 和 Skill 如何进入世界」。演进路径从孤立 Model Call → API Hardcoding → 标准化 Protocol（MCP、A2A、Function Calling）→ Agentic Web。Harness 通过 Interact（对接外部 API 与工具）、Perceive（感知环境与反馈）、Collaborate（与 LLM/Agent/人类协作）三支柱管理外化交互，Memory 外化「学了什么」，Skill 外化「怎么做」，Protocol 是二者进入现实的通道。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135531大.jpeg" alt="第 5 页：Protocols 外化的交互" loading="lazy">
+        <figcaption>第 5 页 · 13:55 · Externalized Interaction: Protocols</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-06">
+      <div class="slide-header">
+        <span class="slide-num">6</span>
+        <h2 class="slide-title">Harness：智能体的认知环境</h2>
+        <span class="slide-time">13:56</span>
+      </div>
+      <p>全场核心论断：<strong>Agent = Model + Harness</strong>。Harness 不是外围插件，而是 Agent 赖以思考与行动的认知环境——Skills、Memory、Protocols 三簇能力围绕 Harness 核心展开，向外延伸到 Sandbox、Sub-agent 编排、可观测性与审批环路。右侧时间轴（2022→2026）显示社区热点从 Pretraining / Fine-tuning 的权重层，逐步上移到 Context Engineering，再到 MCP、Tool Ecosystems 等 Harness 层。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135647大.jpeg" alt="第 6 页：Harness 认知环境" loading="lazy">
+        <figcaption>第 6 页 · 13:56 · Agent = Model + Harness</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-07">
+      <div class="slide-header">
+        <span class="slide-num">7</span>
+        <h2 class="slide-title">从 Externalized Skills 到 Latent Skills</h2>
+        <span class="slide-time">13:57</span>
+      </div>
+      <p>进入「外部化智能应用实践」章节。演讲从潜空间视角重新审视智能体技能的理解、控制与组合问题，提出从 Externalized Skills 到 Latent Skills 的演进方向。这是 Harness 外化理论向工程落地的过渡页，为后续 LatentSkill 方法铺垫。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135749大.jpeg" alt="第 7 页：从 Externalized Skills 到 Latent Skills" loading="lazy">
+        <figcaption>第 7 页 · 13:57 · 章节过渡</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-08">
+      <div class="slide-header">
+        <span class="slide-num">8</span>
+        <h2 class="slide-title">从 Textual Skill 到 Latent Skill</h2>
+        <span class="slide-time">13:58</span>
+      </div>
+      <p>对比两种技能整合路径：Textual Skill 将 skill.md 注入 prompt，可读可编辑但带来重复 token 开销、明文暴露与粗粒度使用；Latent Skill 经 compiler 编译为 LoRA adapter 挂载到模型，以参数影响行为，具备低运行成本、低安全风险与细粒度使用优势。这是 LatentSkill 方案的问题动机页。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_135847大.jpeg" alt="第 8 页：Textual vs Latent Skill" loading="lazy">
+        <figcaption>第 8 页 · 13:58 · Textual Skill vs Latent Skill</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-09">
+      <div class="slide-header">
+        <span class="slide-num">9</span>
+        <h2 class="slide-title">方法定义：从文本条件到参数条件</h2>
+        <span class="slide-time">14:00</span>
+      </div>
+      <p>LatentSkill 核心：不再让模型每步读取 skill 文本，而是用 compiler G<sub>φ</sub> 将 skill 文档映射为 LoRA 更新 Δ<sub>s</sub>，通过参数影响模型行为。公式展示从 p(y|h,s) 到 p<sub>θ⊕αΔ</sub>(y|h) 的条件转换，以及 W' = W + (α/r)BA 的挂载形式。α 控制 skill 注入强度，实现从 prompt 级文本条件到 weight 级参数条件的范式切换。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140017大.jpeg" alt="第 9 页：LatentSkill 方法定义" loading="lazy">
+        <figcaption>第 9 页 · 14:00 · LatentSkill 形式化定义</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-10">
+      <div class="slide-header">
+        <span class="slide-num">10</span>
+        <h2 class="slide-title">两阶段训练 · Stage 1：Skill 文档预训练</h2>
+        <span class="slide-time">14:02</span>
+      </div>
+      <p>第一阶段让 compiler 建立 text → adapter 的基础映射。数据来自 GitHub、SkillsMP 等 17 万+ 真实 skill 文档（约 3 亿 token），构造自监督重构与补全任务：完整 skill → adapter → 还原原文，或 prefix → adapter → 补全全文。仅更新 compiler G<sub>φ</sub>，冻结 backbone，先学会把程序性知识从文本写入权重，形成可承载 skill 的 latent adapter。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140215大.jpeg" alt="第 10 页：LatentSkill Stage 1 训练" loading="lazy">
+        <figcaption>第 10 页 · 14:02 · Skill Document Pretraining</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-11">
+      <div class="slide-header">
+        <span class="slide-num">11</span>
+        <h2 class="slide-title">两阶段训练 · Stage 2：轨迹监督微调</h2>
+        <span class="slide-time">14:04</span>
+      </div>
+      <p>第二阶段让 adapter 把静态 skill 表示对齐到真实 agent 行为。以 OpenAI o3 为 teacher model，在带 skill 标注的交互轨迹上监督微调：每步根据 history/observation 模仿 teacher 的 reasoning 与 action，同一 adapter 贯穿多步交互，学到稳定的 skill-level policy。目标是从承载程序性知识的 adapter，变成能驱动 agent 行为的潜在能力模块。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140404大.jpeg" alt="第 11 页：LatentSkill Stage 2 训练" loading="lazy">
+        <figcaption>第 11 页 · 14:04 · Trajectory-Supervised Fine-Tuning</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-12">
+      <div class="slide-header">
+        <span class="slide-num">12</span>
+        <h2 class="slide-title">实验设置</h2>
+        <span class="slide-time">14:05</span>
+      </div>
+      <p>以冻结 Qwen3-8B 为 backbone，对比 In-context Skill（同一定义注入 prompt）与 LatentSkill（compiler → LoRA adapter 挂载）。基准测试覆盖 ALFWorld（6 类多步家务交互，评成功率/步数/token 成本）与 Search-QA（7 个搜索问答数据集，评 EM 与 token 成本）。Skill 按任务类别匹配，ALFWorld 测试 140 seen + 134 unseen episode，每 episode 最多 50 步。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140504大.jpeg" alt="第 12 页：实验设置" loading="lazy">
+        <figcaption>第 12 页 · 14:05 · Experimental Setup</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-13">
+      <div class="slide-header">
+        <span class="slide-num">13</span>
+        <h2 class="slide-title">实验结果：ALFWorld 能力保留、成本下降</h2>
+        <span class="slide-time">14:05</span>
+      </div>
+      <p>LatentSkill 在 ALFWorld 上全面领先各 baseline。Seen 平均成功率从 52.9% 提升至 74.3%，Unseen 从 56.0% 提升至 69.4%；Prefill token 从 1.2k 降至 0.44k，因 skill 不再每步重复注入 context。平均路径更短、决策更高效——改进作用于多步决策过程本身，而非仅最终答案。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140542大.jpeg" alt="第 13 页：ALFWorld 实验结果" loading="lazy">
+        <figcaption>第 13 页 · 14:05 · ALFWorld Performance</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-14">
+      <div class="slide-header">
+        <span class="slide-num">14</span>
+        <h2 class="slide-title">实验结果：Search-QA 策略迁移与降本</h2>
+        <span class="slide-time">14:06</span>
+      </div>
+      <p>Search-QA 上 LatentSkill 平均 EM 从 32.6 提升至 35.6，每步 token 成本从 1.10k 大幅降至 0.31k。关键不在分数微增，而是保留了分解问题、构造查询、整合证据等策略性行为——证明 latent 表示能在降本的同时维持复杂搜索策略，而非退化为简单检索。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140648大.jpeg" alt="第 14 页：Search-QA 实验结果" loading="lazy">
+        <figcaption>第 14 页 · 14:06 · Search-QA Performance</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-15">
+      <div class="slide-header">
+        <span class="slide-num">15</span>
+        <h2 class="slide-title">Structured：LatentSkill 压缩低秩有效</h2>
+        <span class="slide-time">14:07</span>
+      </div>
+      <p>分析 hypernetwork 生成的 ΔW 的 Frobenius 范数与 stable rank：不同 skill 的幅度接近，compiler 输出稳定；Stable Rank 仅约 2.2，SFT 后进一步降低。奇异值能量高度集中——Top-2 约 67–71%，Top-5 约 93%，SFT 后更集中。结论：LatentSkill 将程序性知识压缩为低秩、紧凑、可分析的 latent adapter。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140713大.jpeg" alt="第 15 页：低秩有效性分析" loading="lazy">
+        <figcaption>第 15 页 · 14:07 · Low-Rank Effectiveness</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-16">
+      <div class="slide-header">
+        <span class="slide-num">16</span>
+        <h2 class="slide-title">Structured：LatentSkill 形成语义几何</h2>
+        <span class="slide-time">14:08</span>
+      </div>
+      <p>权重空间可视化显示 ALFWorld 与 Search 技能形成不同聚类区域，LatentSkill 捕获的不只是词面相似。域外技能（Code、Finance、Writing）也能形成紧致结构，说明 compiler 学到了可泛化的程序性知识表示。核心主张：让 skill 不再只是 prompt 文本，而是可被度量、比较和分析的潜在能力对象。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140820大.jpeg" alt="第 16 页：语义几何结构" loading="lazy">
+        <figcaption>第 16 页 · 14:08 · Semantic Geometry</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-17">
+      <div class="slide-header">
+        <span class="slide-num">17</span>
+        <h2 class="slide-title">Controllable：LatentSkill 强度可调</h2>
+        <span class="slide-time">14:09</span>
+      </div>
+      <p>通过 LoRA scaling 系数 α 连续调节 skill 对模型行为的影响。性能随 α 呈「倒 U 型」曲线——存在有效注入区间，适中 scaling 最佳，过强会破坏原模型能力。不同任务最优 α 不同，弱 baseline 往往需要更强 skill。Harness 不仅要选择哪个 skill，还要选择介入强度——从 prompt 级的是否加载，升级为 weight 级的强度控制。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_140959大.jpeg" alt="第 17 页：强度可调" loading="lazy">
+        <figcaption>第 17 页 · 14:09 · Controllable Intensity</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-18">
+      <div class="slide-header">
+        <span class="slide-num">18</span>
+        <h2 class="slide-title">Composable：有效组合依赖语义组件对齐</h2>
+        <span class="slide-time">14:11</span>
+      </div>
+      <p>以 Look 为目标 skill、引入 Pick 的搜索能力，对比五种组合配置。朴素直接合并 LoRA 或拼接文本会在 Unseen 上产生行为冲突（61.1% < 72.2%）；语义组件对齐的 Component Merging 达 84.6% / 77.8%，较 Look-Only 提升 +23.1 / +5.6 个百分点。LatentSkill 可在 LoRA 空间组合多技能，但有效组合依赖语义组件对齐，而非简单相加。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_141116大.jpeg" alt="第 18 页：技能组合" loading="lazy">
+        <figcaption>第 18 页 · 14:11 · Skill Composition</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-19">
+      <div class="slide-header">
+        <span class="slide-num">19</span>
+        <h2 class="slide-title">Robust &amp; Secure：Prompt 外运行，更稳定、更低暴露</h2>
+        <span class="slide-time">14:11</span>
+      </div>
+      <p>在 skill 文本扰动（改写、重排、噪声）与对抗攻击（Hijack、Extract）下，LatentSkill 显著优于 In-context 方案。Hijack 攻击下 ALFWorld 成功率：In-context 跌至 8.57%，Latent 仍保持 38.6%。因 skill 以编译后的 LoRA 表示运行、不暴露明文，既抗表面形式变化，也降低被劫持覆写或抽取的风险。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_141159大.jpeg" alt="第 19 页：鲁棒性与安全性" loading="lazy">
+        <figcaption>第 19 页 · 14:11 · Robustness &amp; Security</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-20">
+      <div class="slide-header">
+        <span class="slide-num">20</span>
+        <h2 class="slide-title">LatentSkill：外化与内化之间</h2>
+        <span class="slide-time">14:13</span>
+      </div>
+      <p>沿 Context → Weights → Backbone 光谱定位三种技能范式：Textual Skill（可读可编辑但 token 贵、明文暴露）、LatentSkill（移出 prompt、可插拔可缩放可组合，需 compiler）、Fine-tuned Skill（运行便宜但难删除难更新难审计）。LatentSkill 占据中间地带——在保留外化灵活性的同时，向内化靠拢，是外化与内化之间的平衡点。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_141300大.jpeg" alt="第 20 页：外化与内化之间" loading="lazy">
+        <figcaption>第 20 页 · 14:13 · Between Externalization &amp; Internalization</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-21">
+      <div class="slide-header">
+        <span class="slide-num">21</span>
+        <h2 class="slide-title">LatentSkill 对 Agent 平台意味着什么</h2>
+        <span class="slide-time">14:13</span>
+      </div>
+      <p>四个平台级价值：①更低成本——长程任务不再每步重复读取 skill text；②更低暴露——skill 不以明文出现在 prompt 或日志中；③更好治理——adapter 可插拔、可缩放、可组合，便于版本管理与灰度 A/B；④新产品形态——从交付 Markdown（分发即暴露）转向交付 LoRA adapter，技能成为可授权、可计费、可撤回的标准化模块。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_141356大.jpeg" alt="第 21 页：Agent 平台意义" loading="lazy">
+        <figcaption>第 21 页 · 14:13 · Platform Implications</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-22">
+      <div class="slide-header">
+        <span class="slide-num">22</span>
+        <h2 class="slide-title">路线图：Model-Harness 协同演化</h2>
+        <span class="slide-time">14:14</span>
+      </div>
+      <p>三大演化方向并行推进：Model 自演化（能力自感知、自生成改进数据、自训练闭环）；Harness 自演化（克服人工工程难规模化、静态脚本退化、模型能力演进快于外部封装）；主动交互（从被动接指令到主动预测用户需求，将上下文工程负担从用户转移给 agent）。这是综述层面的未来研究议程，呼应开篇的耦合视角。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_141414大.jpeg" alt="第 22 页：协同演化路线图" loading="lazy">
+        <figcaption>第 22 页 · 14:14 · Co-Evolution Roadmap</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-23">
+      <div class="slide-header">
+        <span class="slide-num">23</span>
+        <h2 class="slide-title">未来方向</h2>
+        <span class="slide-time">14:14</span>
+      </div>
+      <p>二维坐标描绘智能体从 L1 合规执行到 L3 主动预判与自我进化的路径。L1 具备短期记忆、简单规划与有限工具调用；L2 引入终身个性化记忆、多智能体协议与通用表征；L3 迈向主动交互、多模态交互与自主学习。纵轴为自主运行程度与交互成本，横轴为能力等级——技术演进的方向是降低交互成本、提升自主性。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_141436大.jpeg" alt="第 23 页：未来方向" loading="lazy">
+        <figcaption>第 23 页 · 14:14 · Future Directions L1–L3</figcaption>
+      </figure>
+    </article>
+
+    <article id="slide-24">
+      <div class="slide-header">
+        <span class="slide-num">24</span>
+        <h2 class="slide-title">结语与致谢</h2>
+        <span class="slide-time">14:14</span>
+      </div>
+      <p>演讲收尾页，展示周宸宇的联系方式：chenyuzhou@sjtu.edu.cn，主页 https://0xzhouchenyu.github.io。背景融入上海交大标志性建筑与校训「饮水思源 · 爱国荣校」。整场分享从 Harness 外化理论框架出发，经 LatentSkill 方法与实验验证，收束于 Model-Harness 协同演化的未来路线图。</p>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/模型之外的智能/IMG_20260703_141446大.jpeg" alt="第 24 页：致谢" loading="lazy">
+        <figcaption>第 24 页 · 14:14 · Thanks!</figcaption>
+      </figure>
+    </article>
+
+  </main>
+</div>
+
+<div id="lightbox" role="dialog" aria-label="图片预览">
+  <img src="" alt="预览">
+</div>
+
+<script>
+  const lb = document.getElementById('lightbox');
+  const lbImg = lb.querySelector('img');
+  document.querySelectorAll('figure img').forEach(img => {
+    img.addEventListener('click', () => {
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lb.classList.add('open');
+    });
+  });
+  lb.addEventListener('click', () => lb.classList.remove('open'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+    <meta name="date" content="2026-07-04">
+  <meta name="summary" content="「2026中国AI智能体大会」于7月2日至7月3日在杭州举办。本文记录开幕式及三场闭门研讨的核心收获，重点覆盖自进化智能体、Skill 群体进化与 Agent Harness 外化体系，并结合 GPU 算子 Skill 仓实践给出启示。">
+  <meta name="tags" content="AI Agent, 自进化智能体, Skill, Agent Harness, GenericAgent, SkillClaw">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>从单体智能走向群体智能 · SkillClaw 胶片全集</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --paper: #ffffff;
+      --ink: #1a2332;
+      --muted: #5c6b7f;
+      --accent: #0d4f8b;
+      --accent-light: #e8f1fa;
+      --border: #dde3ea;
+      --highlight: #c45c26;
+      --radius: 10px;
+      --shadow: 0 2px 16px rgba(26, 35, 50, 0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.75;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .cover {
+      background: linear-gradient(145deg, #0a2d52 0%, #0d4f8b 55%, #1a6aab 100%);
+      color: #fff;
+      padding: 64px 24px 56px;
+      text-align: center;
+    }
+    .cover-tag {
+      display: inline-block;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.75;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 4px 14px;
+      border-radius: 20px;
+    }
+    .cover h1 {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 16px;
+    }
+    .cover-meta {
+      font-size: 14px;
+      opacity: 0.8;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 32px;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    nav.toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    nav.toc h2 {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    nav.toc ol { list-style: none; counter-reset: toc; }
+    nav.toc li { margin-bottom: 4px; counter-increment: toc; }
+    nav.toc a {
+      color: var(--muted);
+      text-decoration: none;
+      display: block;
+      padding: 3px 6px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    nav.toc a:hover { color: var(--accent); background: var(--accent-light); }
+    nav.toc .toc-num {
+      display: inline-block;
+      width: 18px;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    main { min-width: 0; }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transition: background 0.15s;
+    }
+    .back-link:hover { background: var(--accent-light); }
+
+    article {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 36px 44px;
+      margin-bottom: 24px;
+    }
+
+    .slide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .slide-badge .num {
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .slide-badge .time {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    h2.slide-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    p.slide-desc {
+      margin-bottom: 0;
+      color: #2d3a4a;
+      font-size: 15px;
+    }
+
+    figure {
+      margin: 20px 0 16px;
+    }
+    figure img {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      display: block;
+      cursor: zoom-in;
+      transition: box-shadow 0.2s;
+    }
+    figure img:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+    figcaption {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      cursor: zoom-out;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: 95vw;
+      max-height: 92vh;
+      border-radius: 6px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    @media print {
+      nav.toc { display: none; }
+      .layout { display: block; padding: 0; }
+      article { box-shadow: none; border: none; padding: 20px 0; page-break-inside: avoid; }
+      .cover { padding: 32px; }
+      figure img { max-height: 280px; object-fit: contain; }
+    }
+
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      nav.toc { position: static; max-height: none; }
+      article { padding: 24px 20px; }
+    }
+
+    /* ── Site Nav ── */
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(10, 45, 82, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .site-nav a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .site-nav a:hover { color: #fff; }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav"><a href="/">← CoolGPU</a></nav>
+
+<header class="cover">
+  <div class="cover-tag">自进化智能体研讨会 · 胶片全集</div>
+  <h1>从单体智能走向群体智能<br>SkillClaw 胶片全集</h1>
+  <div class="cover-meta">
+    <span>分享人：姬煜翔（厦门大学）</span>
+    <span>2026.07.03 · 自进化智能体研讨会</span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#slide-01"><span class="toc-num">01</span>开场封面</a></li>
+      <li><a href="#slide-02"><span class="toc-num">02</span>Cowork Agent 现状</a></li>
+      <li><a href="#slide-03"><span class="toc-num">03</span>沉淀与共享之困</a></li>
+      <li><a href="#slide-04"><span class="toc-num">04</span>经验复利</a></li>
+      <li><a href="#slide-05"><span class="toc-num">05</span>Skill 载体定义</a></li>
+      <li><a href="#slide-06"><span class="toc-num">06</span>三阶段进化</a></li>
+      <li><a href="#slide-07"><span class="toc-num">07</span>四象限定位</a></li>
+      <li><a href="#slide-08"><span class="toc-num">08</span>架构总览</a></li>
+      <li><a href="#slide-09"><span class="toc-num">09</span>进化信号来源</a></li>
+      <li><a href="#slide-10"><span class="toc-num">10</span>进化管线</a></li>
+      <li><a href="#slide-11"><span class="toc-num">11</span>进化后管理</a></li>
+      <li><a href="#slide-12"><span class="toc-num">12</span>Client Proxy 接入</a></li>
+      <li><a href="#slide-13"><span class="toc-num">13</span>分布式管理</a></li>
+      <li><a href="#slide-14"><span class="toc-num">14</span>Nacos 治理</a></li>
+      <li><a href="#slide-15"><span class="toc-num">15</span>实验结果</a></li>
+      <li><a href="#slide-16"><span class="toc-num">16</span>总结与展望</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <a class="back-link" href="/pages/2026-07-04-ai-agent-conference.html">← 返回参会记实</a>
+
+    <article id="slide-01">
+      <div class="slide-badge">
+        <span class="num">1</span>
+        <span class="time">11:02:46</span>
+      </div>
+      <h2 class="slide-title">开场封面：从单体智能走向群体智能</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110246大.jpeg" alt="SkillClaw 分享封面" loading="lazy">
+        <figcaption>胶片 01 · 11:02:46</figcaption>
+      </figure>
+      <p class="slide-desc">本页为 SkillClaw 团队分享的封面，主题是从单智能体走向群体智能，让 Agent 通过 Skill 层实现协同进化。副标题强调「Let Skills Evolve Collectively with an Agentic Evolver」，定位是让经验在群体里、在 Skill 层持续演进。画面右侧的卡通红蚂蚁吉祥物象征勤劳协作的 Agent 群体。</p>
+    </article>
+
+    <article id="slide-02">
+      <div class="slide-badge">
+        <span class="num">2</span>
+        <span class="time">11:03:20</span>
+      </div>
+      <h2 class="slide-title">群体 / Cowork Agent 现状与演进路径</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110320大.jpeg" alt="群体 Cowork Agent 现状" loading="lazy">
+        <figcaption>胶片 02 · 11:03:20</figcaption>
+      </figure>
+      <p class="slide-desc">幻灯片梳理了 Agent 生态从 2025 到 2026 及以后的四阶段演进：个体能力（SKILL.MD 封装）、自进化（OpenClaw、Hermes）、群体协作（Multica、Raft 看板式分工）到生态协同（Claude Tag 频道式记忆共享）。核心叙事是从「共享助手」走向「Agent 协作伙伴」，为后续 SkillClaw 的群体进化方案铺垫背景。</p>
+    </article>
+
+    <article id="slide-03">
+      <div class="slide-badge">
+        <span class="num">3</span>
+        <span class="time">11:05:05</span>
+      </div>
+      <h2 class="slide-title">经验「沉淀」与「共享」之困（THE GAP）</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110505大.jpeg" alt="经验沉淀与共享之困" loading="lazy">
+        <figcaption>胶片 03 · 11:05:05</figcaption>
+      </figure>
+      <p class="slide-desc">姬煜翔指出当前 Agent 生态的两个结构性痛点：一是经验难沉淀——写代码、排障、文档中产生的高价值经验停留在聊天记录、本地记忆或个人脑中，无法转化为可复用 Skill；二是经验难共享——即使个人沉淀了 Skill 文件，缺少 Registry 意味着没有版本、审核、分发、回滚与发现机制，团队成员无法复用。这正是 SkillClaw 要填补的鸿沟。</p>
+    </article>
+
+    <article id="slide-04">
+      <div class="slide-badge">
+        <span class="num">4</span>
+        <span class="time">11:05:39</span>
+      </div>
+      <h2 class="slide-title">如何让经验在群体里获得复利？</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110539大.jpeg" alt="经验复利" loading="lazy">
+        <figcaption>胶片 04 · 11:05:39</figcaption>
+      </figure>
+      <p class="slide-desc">「共享了 Agent，能力却没有一起变强」——多个用户、多台设备反复踩同一个坑：参数格式不对、路径不存在、Git 鉴权失败、工具调用错配。SkillClaw 的解法是在 Skill 层复用 Agent 反馈中的经验，将个体 Session 中的行为模式提取、沉淀为 Skill A/B/C/D，让整个群体复用，经验在组织层面积累复利。</p>
+    </article>
+
+    <article id="slide-05">
+      <div class="slide-badge">
+        <span class="num">5</span>
+        <span class="time">11:06:20</span>
+      </div>
+      <h2 class="slide-title">Skill：承载经验的载体</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110620大.jpeg" alt="Skill 承载经验的载体" loading="lazy">
+        <figcaption>胶片 05 · 11:06:20</figcaption>
+      </figure>
+      <p class="slide-desc">本页给出 Skill 的四个关键特性：将「怎么把事做好」写成可复用 SOP、能在真实环境验证效用、一处沉淀同步给所有 Agent 和人、独立于模型权重之外承载行为方法。底部指出 ClawHub、SkillHub 等开源平台虽已涌现，但形式仍为「静态」，无法通过 Agent 交互自身进化——这正是 SkillClaw 要解决的问题。</p>
+    </article>
+
+    <article id="slide-06">
+      <div class="slide-badge">
+        <span class="num">6</span>
+        <span class="time">11:07:25</span>
+      </div>
+      <h2 class="slide-title">面向群体的 Skill 进化：三阶段框架</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110725大.jpeg" alt="SkillClaw 三阶段" loading="lazy">
+        <figcaption>胶片 06 · 11:07:25</figcaption>
+      </figure>
+      <p class="slide-desc">SkillClaw 面向群体的 Skill 进化遵循固定三阶段：聚合——跨 Session、跨用户、跨时间的多源行为数据汇聚；归因进化——挖掘 Evidence、识别成败归因、生成/优化 Skill 形成可复用范式；验证治理——上线前进行安全性与有效性评估，通过验证后进入后续治理流程。三阶段构成 SkillClaw 方法论的核心骨架。</p>
+    </article>
+
+    <article id="slide-07">
+      <div class="slide-badge">
+        <span class="num">7</span>
+        <span class="time">11:08:35</span>
+      </div>
+      <h2 class="slide-title">SkillClaw 的定位：四象限分析</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110835大.jpeg" alt="SkillClaw 四象限定位" loading="lazy">
+        <figcaption>胶片 07 · 11:08:35</figcaption>
+      </figure>
+      <p class="slide-desc">以「经验范围」（任务内 vs 跨任务长期沉淀）和「共享形态」（上下文/记忆共享程度）为两轴，现有方案多落在 Multi-Agent 编排（Claude Code subagents）、共享记忆（Claude Tags）或单体 Agent（OpenClaw、Hermes）三个象限。右下「Skill 群体进化」几乎无人系统性做——这正是 SkillClaw 的切入点，将多 Agent 轨迹长期沉淀为可复用、可演化的 Skill。</p>
+    </article>
+
+    <article id="slide-08">
+      <div class="slide-badge">
+        <span class="num">8</span>
+        <span class="time">11:09:55</span>
+      </div>
+      <h2 class="slide-title">SkillClaw 架构总览</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_110955大.jpeg" alt="SkillClaw 架构总览" loading="lazy">
+        <figcaption>胶片 08 · 11:09:55</figcaption>
+      </figure>
+      <p class="slide-desc">全栈架构分三层：Client Proxy 负责 API 接入、Skill 注入与轨迹录制（turn、工具调用、错误、Skill 命中等）；共享存储汇聚所有 Agent 群体 Session 与进化后的 Skill 历史；进化服务执行 Summarize → Aggregate → Evolve → Verify → Publish 流水线，Agentic Evolver 判断复用/改进/新建 Skill。底部闭环为「会话收集 → 验证发布 → 持续复用」。</p>
+    </article>
+
+    <article id="slide-09">
+      <div class="slide-badge">
+        <span class="num">9</span>
+        <span class="time">11:10:43</span>
+      </div>
+      <h2 class="slide-title">进化信号来源</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111043大.jpeg" alt="进化信号来源" loading="lazy">
+        <figcaption>胶片 09 · 11:10:43</figcaption>
+      </figure>
+      <p class="slide-desc">SkillClaw 的设计起点是：不只看最终答案，过程中的每个反馈点都是 Skill 进化的监督信号。人类反馈（纠正、编辑、确认、拒绝）构成语义级 Good/Bad 信号；环境反馈（工具返回错误、权限不足、路径异常）驱动重试/重规划/补丁修复。跨 Session 按 Skill 聚合对比，形成天然 ablation：成功轨迹强化模式，失败轨迹暴露缺陷。</p>
+    </article>
+
+    <article id="slide-10">
+      <div class="slide-badge">
+        <span class="num">10</span>
+        <span class="time">11:12:12</span>
+      </div>
+      <h2 class="slide-title">Skill 进化管线：静态 Pipeline vs Agentic Evolver</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111212大.jpeg" alt="Skill 进化管线" loading="lazy">
+        <figcaption>胶片 10 · 11:12:12</figcaption>
+      </figure>
+      <p class="slide-desc">SkillClaw 提供两条进化路径：静态 Pipeline（Summarize → Aggregate → Execute → Publish）适合结构化、稳定的早期冷启动；Agentic Evolver 让 Harness 内 Agent 自主诊断、决策（Refine/Create/Skip）、编辑 SKILL 文件，应对 Skill 需重构、合并或边界条件复杂的场景。成功 Session 沉淀有效行为模式，失败 Session 提炼待修正问题模式。</p>
+    </article>
+
+    <article id="slide-11">
+      <div class="slide-badge">
+        <span class="num">11</span>
+        <span class="time">11:13:06</span>
+      </div>
+      <h2 class="slide-title">Skill 进化后如何管理</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111306大.jpeg" alt="Skill 进化后管理" loading="lazy">
+        <figcaption>胶片 11 · 11:13:06</figcaption>
+      </figure>
+      <p class="slide-desc">目标是把 Skill 从个人经验文件变成可分发、复用、治理的 AI 资产。生命周期为 draft → review → online → offline，治理维度涵盖版本、标签、状态、审计 Trace 与元数据。验证闭环分两层：进化端 Critic Agent 在模拟环境自动校验，用户端在真实场景闲时分发重放——从模拟到真实构成完整检验链。</p>
+    </article>
+
+    <article id="slide-12">
+      <div class="slide-badge">
+        <span class="num">12</span>
+        <span class="time">11:14:20</span>
+      </div>
+      <h2 class="slide-title">Client Proxy：低侵入接入</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111420大.jpeg" alt="Client Proxy 低侵入接入" loading="lazy">
+        <figcaption>胶片 12 · 11:14:20</figcaption>
+      </figure>
+      <p class="slide-desc">工程落地采用 Client Proxy 低侵入方案：用户照常与 Codex、Claude Code、Hermes、OpenClaw 对话，只需把 API endpoint 指向本地 proxy，上游模型调用逻辑不变。后台 Server 自动记录 session artifacts、管理本地 Skill 库、注入与同步 Skill。兼容多种 Agent Harness，不改使用习惯即可接入群体进化闭环。</p>
+    </article>
+
+    <article id="slide-13">
+      <div class="slide-badge">
+        <span class="num">13</span>
+        <span class="time">11:15:03</span>
+      </div>
+      <h2 class="slide-title">跨用户 / 设备，分布式管理</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111503大.jpeg" alt="跨用户设备分布式管理" loading="lazy">
+        <figcaption>胶片 13 · 11:15:03</figcaption>
+      </figure>
+      <p class="slide-desc">接入 SkillClaw Proxy 的 Agent 通过共享存储层交互，同一 Group Namespace 下保存两类数据：sessions/（轨迹、artifacts、反馈）和 skills/（Skill 数据、版本管理、候选）。支持对不同 Agent 群组分组隔离，后端可选 local、阿里云 OSS 或 AWS S3。多用户、多设备、验证 worker 均可通过 local proxy 接入同一存储层。</p>
+    </article>
+
+    <article id="slide-14">
+      <div class="slide-badge">
+        <span class="num">14</span>
+        <span class="time">11:15:32</span>
+      </div>
+      <h2 class="slide-title">团队级 Skill 治理：与 Nacos 合作落地</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111532大.jpeg" alt="Nacos Skill 治理" loading="lazy">
+        <figcaption>胶片 14 · 11:15:32</figcaption>
+      </figure>
+      <p class="slide-desc">SkillClaw 与 Nacos 合作，把 Skill 当作 AI 资产纳入统一注册中心。Shared Storage 提供存储能力，Nacos Registry 提供团队级治理（版本、标签、状态、审核、审计 Trace、元数据）。完整生命周期为 candidate → draft → review → online → latest，每步有版本记录与审计日志，支持回滚。工业级治理带来更可控、可扩展的 Skill 群体进化能力。</p>
+    </article>
+
+    <article id="slide-15">
+      <div class="slide-badge">
+        <span class="num">15</span>
+        <span class="time">11:16:31</span>
+      </div>
+      <h2 class="slide-title">WildClawBench 实验结果</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111631大.jpeg" alt="WildClawBench 实验结果" loading="lazy">
+        <figcaption>胶片 15 · 11:16:31</figcaption>
+      </figure>
+      <p class="slide-desc">在 WildClawBench（60 个真实世界 Agent 任务）上，多轮群体进化带来稳定提升：社交互动 54%→60%，搜索检索 23%→35%，创意合成 12%→22%，安全对齐 24%→32%。环境反馈获得的监督信号能在真实任务中持续优化 Skill。过程类经验（工具调用、环境适配、错误恢复）更易沉淀，纯推理类任务收益相对较小。</p>
+    </article>
+
+    <article id="slide-16">
+      <div class="slide-badge">
+        <span class="num">16</span>
+        <span class="time">11:16:59</span>
+      </div>
+      <h2 class="slide-title">总结与展望：迈向可规模化的 Agent Skill 生态</h2>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/SkillClaw/IMG_20260703_111659大.jpeg" alt="总结与展望" loading="lazy">
+        <figcaption>胶片 16 · 11:16:59</figcaption>
+      </figure>
+      <p class="slide-desc">总结三点核心价值：Skill 是群体智慧的沉淀，将一次性交互结果转化为可复用、可验证、可分发的能力资产；SkillClaw 构建聚合→归因→进化→验证→治理的进化闭环；从个体交互走向群体交互，Agent 在群体中共享并迭代行为模式。展望更大规模真实交互、更长期持续演化、更可靠的 Skill 治理（验证、版本、分布式训练、隐私保护）。</p>
+    </article>
+
+  </main>
+</div>
+
+<div id="lightbox" role="dialog" aria-label="图片预览">
+  <img src="" alt="预览">
+</div>
+
+<script>
+  const lb = document.getElementById('lightbox');
+  const lbImg = lb.querySelector('img');
+  document.querySelectorAll('figure img').forEach(img => {
+    img.addEventListener('click', () => {
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lb.classList.add('open');
+    });
+  });
+  lb.addEventListener('click', () => lb.classList.remove('open'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
+</script>
+
+</body>
+</html>

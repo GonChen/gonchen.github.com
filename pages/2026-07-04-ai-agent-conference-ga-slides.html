@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+    <meta name="date" content="2026-07-04">
+  <meta name="summary" content="「2026中国AI智能体大会」于7月2日至7月3日在杭州举办。本文记录开幕式及三场闭门研讨的核心收获，重点覆盖自进化智能体、Skill 群体进化与 Agent Harness 外化体系，并结合 GPU 算子 Skill 仓实践给出启示。">
+  <meta name="tags" content="AI Agent, 自进化智能体, Skill, Agent Harness, GenericAgent, SkillClaw">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大模型驱动的自进化智能体 · 胶片全集</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --paper: #ffffff;
+      --ink: #1a2332;
+      --muted: #5c6b7f;
+      --accent: #0d4f8b;
+      --accent-light: #e8f1fa;
+      --border: #dde3ea;
+      --radius: 10px;
+      --shadow: 0 2px 16px rgba(26, 35, 50, 0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.75;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .cover {
+      background: linear-gradient(145deg, #0a2d52 0%, #0d4f8b 55%, #1a6aab 100%);
+      color: #fff;
+      padding: 64px 24px 56px;
+      text-align: center;
+    }
+    .cover-tag {
+      display: inline-block;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.75;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 4px 14px;
+      border-radius: 20px;
+    }
+    .cover h1 {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 16px;
+    }
+    .cover-meta {
+      font-size: 14px;
+      opacity: 0.8;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 32px;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    nav.toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    nav.toc .back-link {
+      display: block;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--accent-light);
+      transition: background 0.15s;
+    }
+    nav.toc .back-link:hover { background: #d4e6f7; }
+    nav.toc h2 {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    nav.toc ol { list-style: none; }
+    nav.toc li { margin-bottom: 4px; }
+    nav.toc a {
+      color: var(--muted);
+      text-decoration: none;
+      display: block;
+      padding: 3px 6px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    nav.toc a:hover { color: var(--accent); background: var(--accent-light); }
+    nav.toc .toc-num {
+      display: inline-block;
+      width: 22px;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    main { min-width: 0; }
+
+    article {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 36px 44px;
+      margin-bottom: 24px;
+    }
+
+    .slide-badge {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      letter-spacing: 0.02em;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    p { margin-bottom: 0; color: #2d3a4a; font-size: 15px; }
+
+    figure { margin: 20px 0 16px; }
+    figure img {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      display: block;
+      cursor: zoom-in;
+      transition: box-shadow 0.2s;
+    }
+    figure img:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+    figcaption {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      cursor: zoom-out;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: 95vw;
+      max-height: 92vh;
+      border-radius: 6px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    @media print {
+      nav.toc { display: none; }
+      .layout { display: block; padding: 0; }
+      article { box-shadow: none; border: none; padding: 20px 0; page-break-inside: avoid; }
+      .cover { padding: 32px; }
+      figure img { max-height: 280px; object-fit: contain; }
+    }
+
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      nav.toc { position: static; max-height: none; }
+      article { padding: 24px 20px; }
+    }
+
+    /* ── Site Nav ── */
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(10, 45, 82, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .site-nav a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .site-nav a:hover { color: #fff; }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav"><a href="/">← CoolGPU</a></nav>
+
+<header class="cover">
+  <div class="cover-tag">开幕式主题分享 · 胶片全集</div>
+  <h1>大模型驱动的自进化智能体<br>胶片全集</h1>
+  <div class="cover-meta">
+    <span>分享人：肖仰华教授（复旦大学 / GenericAgent）</span>
+    <span>2026.07.02 · 开幕式</span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <a class="back-link" href="/pages/2026-07-04-ai-agent-conference.html">← 返回参会记实</a>
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#slide-1"><span class="toc-num">01</span>开幕式演讲封面</a></li>
+      <li><a href="#slide-2"><span class="toc-num">02</span>GenericAgent 核心愿景</a></li>
+      <li><a href="#slide-3"><span class="toc-num">03</span>智能的本质（静态 vs 动态）</a></li>
+      <li><a href="#slide-4"><span class="toc-num">04</span>智能的本质（跨学科定义）</a></li>
+      <li><a href="#slide-5"><span class="toc-num">05</span>智能的本质：知行合一</a></li>
+      <li><a href="#slide-6"><span class="toc-num">06</span>智能体是智能的载体</a></li>
+      <li><a href="#slide-7"><span class="toc-num">07</span>思维能力决定智能体水平</a></li>
+      <li><a href="#slide-8"><span class="toc-num">08</span>智能体演进历史</a></li>
+      <li><a href="#slide-9"><span class="toc-num">09</span>大模型驱动的智能体</a></li>
+      <li><a href="#slide-10"><span class="toc-num">10</span>大模型推动智能体的智能跃迁</a></li>
+      <li><a href="#slide-11"><span class="toc-num">11</span>自进化智能体定义</a></li>
+      <li><a href="#slide-12"><span class="toc-num">12</span>自进化智能体：迈向 AGI 的关键阶段</a></li>
+      <li><a href="#slide-13"><span class="toc-num">13</span>龙虾比喻：从聊天到干活</a></li>
+      <li><a href="#slide-14"><span class="toc-num">14</span>GenericAgent 章节封面</a></li>
+      <li><a href="#slide-15"><span class="toc-num">15</span>GenericAgent vs OpenClaw</a></li>
+      <li><a href="#slide-16"><span class="toc-num">16</span>龙虾之魂：百万级技能库</a></li>
+      <li><a href="#slide-17"><span class="toc-num">17</span>媒体报道</a></li>
+      <li><a href="#slide-18"><span class="toc-num">18</span>GA 的基本能力与核心架构</a></li>
+      <li><a href="#slide-19"><span class="toc-num">19</span>GA 的自进化特性</a></li>
+      <li><a href="#slide-20"><span class="toc-num">20</span>GA 的极低 Token 消耗</a></li>
+      <li><a href="#slide-21"><span class="toc-num">21</span>GA 是自进化智能体的代表</a></li>
+      <li><a href="#slide-22"><span class="toc-num">22</span>上下文爆炸与长程任务失败</a></li>
+      <li><a href="#slide-23"><span class="toc-num">23</span>大模型难以解决上下文爆炸</a></li>
+      <li><a href="#slide-24"><span class="toc-num">24</span>上下文信息密度是根本</a></li>
+      <li><a href="#slide-25"><span class="toc-num">25</span>上下文信息密度是结构性约束</a></li>
+      <li><a href="#slide-26"><span class="toc-num">26</span>夯实核心能力是根本</a></li>
+      <li><a href="#slide-27"><span class="toc-num">27</span>最小工具集</a></li>
+      <li><a href="#slide-28"><span class="toc-num">28</span>工具极简的可能性</a></li>
+      <li><a href="#slide-29"><span class="toc-num">29</span>GA 工具全景图</a></li>
+      <li><a href="#slide-30"><span class="toc-num">30</span>生长哲学：能力从种子生长</a></li>
+      <li><a href="#slide-31"><span class="toc-num">31</span>技能树自主生长</a></li>
+      <li><a href="#slide-32"><span class="toc-num">32</span>压缩表达</a></li>
+      <li><a href="#slide-33"><span class="toc-num">33</span>上下文极简实验</a></li>
+      <li><a href="#slide-34"><span class="toc-num">34</span>更少 Token 更能提升性能</a></li>
+      <li><a href="#slide-35"><span class="toc-num">35</span>记忆分层组织</a></li>
+      <li><a href="#slide-36"><span class="toc-num">36</span>经验的沉淀与复用</a></li>
+      <li><a href="#slide-37"><span class="toc-num">37</span>越用越聪明</a></li>
+      <li><a href="#slide-38"><span class="toc-num">38</span>技术洞察章节封面</a></li>
+      <li><a href="#slide-39"><span class="toc-num">39</span>技能的本质</a></li>
+      <li><a href="#slide-40"><span class="toc-num">40</span>技能表示</a></li>
+      <li><a href="#slide-41"><span class="toc-num">41</span>人类专家经验沉淀</a></li>
+      <li><a href="#slide-42"><span class="toc-num">42</span>知识无需严格表示</a></li>
+      <li><a href="#slide-43"><span class="toc-num">43</span>知识在养成过程中形成</a></li>
+      <li><a href="#slide-44"><span class="toc-num">44</span>实践出真知</a></li>
+      <li><a href="#slide-45"><span class="toc-num">45</span>知识的相对性</a></li>
+      <li><a href="#slide-46"><span class="toc-num">46</span>人机交互原则</a></li>
+      <li><a href="#slide-47"><span class="toc-num">47</span>双系统架构</a></li>
+      <li><a href="#slide-48"><span class="toc-num">48</span>实践课程设置</a></li>
+      <li><a href="#slide-49"><span class="toc-num">49</span>本地训练与能力内化</a></li>
+      <li><a href="#slide-50"><span class="toc-num">50</span>从个体智能走向组织智能</a></li>
+      <li><a href="#slide-51"><span class="toc-num">51</span>SEA-Eval 评测体系</a></li>
+      <li><a href="#slide-52"><span class="toc-num">52</span>自进化智能体安全新问题</a></li>
+      <li><a href="#slide-53"><span class="toc-num">53</span>智能体安全是系统工程</a></li>
+      <li><a href="#slide-54"><span class="toc-num">54</span>结语：无为而无不为</a></li>    </ol>
+  </nav>
+
+  <main>
+    <article id="slide-1">
+      <div class="slide-badge">第 1 页 · 10:05</div>
+      <h3>开幕式演讲封面</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100501大.jpeg" alt="开幕式演讲封面" loading="lazy">
+        <figcaption>胶片 01 · 10:05</figcaption>
+      </figure>
+      <p>肖仰华教授在2026中国AI智能体大会开幕式发表题为「大模型驱动的自进化智能体：技术洞察与趋势展望」的主题演讲。封面展示了讲者肖像、复旦大学及上海市数据科学重点实验室身份，并标明大会主办机构智东西与智猩猩。</p>
+    </article>
+
+    <article id="slide-2">
+      <div class="slide-badge">第 2 页 · 10:05</div>
+      <h3>GenericAgent 核心愿景</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100527大.jpeg" alt="GenericAgent 核心愿景" loading="lazy">
+        <figcaption>胶片 02 · 10:05</figcaption>
+      </figure>
+      <p>介绍 GenericAgent 的核心理念：智能体在每次使用中变得更聪明。通过手绘图标展示四大特性——全计算机控制、6 倍 Token 节省、自进化技能树、自动学习保存技能，并强调 100% 开源。</p>
+    </article>
+
+    <article id="slide-3">
+      <div class="slide-badge">第 3 页 · 10:05</div>
+      <h3>智能的本质（静态 vs 动态）</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100557大.jpeg" alt="智能的本质（静态 vs 动态）" loading="lazy">
+        <figcaption>胶片 03 · 10:05</figcaption>
+      </figure>
+      <p>探讨智能从静态能力（知识、计算、记忆）到动态过程的历史转变。分别以专家系统、神经网络和搜索引擎为例，说明智能在三个维度上的演进。</p>
+    </article>
+
+    <article id="slide-4">
+      <div class="slide-badge">第 4 页 · 10:06</div>
+      <h3>智能的本质（跨学科定义）</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100625大.jpeg" alt="智能的本质（跨学科定义）" loading="lazy">
+        <figcaption>胶片 04 · 10:06</figcaption>
+      </figure>
+      <p>给出智能的正式定义：在特定环境中为达成目的而进行感知、决策和行动的动态过程。从哲学、心理学、神经科学和认知科学四个角度引述杜威、斯金纳、弗里斯顿和麦卡锡等名家的观点。</p>
+    </article>
+
+    <article id="slide-5">
+      <div class="slide-badge">第 5 页 · 10:06</div>
+      <h3>智能的本质：知行合一</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100640大.jpeg" alt="智能的本质：知行合一" loading="lazy">
+        <figcaption>胶片 05 · 10:06</figcaption>
+      </figure>
+      <p>对比「缸中之脑」与王阳明心学，指出智能不应是脱离肉体的纯心灵活动，而应是嵌入身体与环境中的能力。现代认知科学认为智能是具身化、情境化且通过行动体现的。</p>
+    </article>
+
+    <article id="slide-6">
+      <div class="slide-badge">第 6 页 · 10:07</div>
+      <h3>智能体是智能的载体</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100739大.jpeg" alt="智能体是智能的载体" loading="lazy">
+        <figcaption>胶片 06 · 10:07</figcaption>
+      </figure>
+      <p>引用 Russell & Norvig 教材定义智能体为能感知环境、自主决策并采取行动以实现目标的系统。以欹器、扫地机器人和祝融号火星车为例说明不同时代智能体的形态。</p>
+    </article>
+
+    <article id="slide-7">
+      <div class="slide-badge">第 7 页 · 10:08</div>
+      <h3>思维能力决定智能体水平</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100850大.jpeg" alt="思维能力决定智能体水平" loading="lazy">
+        <figcaption>胶片 07 · 10:08</figcaption>
+      </figure>
+      <p>指出与传统被动执行程序不同，智能体具备自主行动与持续交互能力。展示感知→思考→行动→反馈的四阶段闭环，并将「思考」环节标红突出为核心。</p>
+    </article>
+
+    <article id="slide-8">
+      <div class="slide-badge">第 8 页 · 10:09</div>
+      <h3>智能体演进历史</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_100923大.jpeg" alt="智能体演进历史" loading="lazy">
+        <figcaption>胶片 08 · 10:09</figcaption>
+      </figure>
+      <p>梳理从 1950 年图灵测试到 2022 年后 LLM Agents 的认知引擎演进历程。时间轴涵盖符号逻辑、专家系统、机器学习、深度学习和 LLM Agent 五个技术时代。</p>
+    </article>
+
+    <article id="slide-9">
+      <div class="slide-badge">第 9 页 · 10:10</div>
+      <h3>大模型驱动的智能体</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101019大.jpeg" alt="大模型驱动的智能体" loading="lazy">
+        <figcaption>胶片 09 · 10:10</figcaption>
+      </figure>
+      <p>强调 LLM 的开放世界知识与反思能力极大提升了智能体的思考与决策水平。左侧架构图展示语言智能体与具身智能体在多样化环境中的交互逻辑，右侧为复杂社交环境模拟案例。</p>
+    </article>
+
+    <article id="slide-10">
+      <div class="slide-badge">第 10 页 · 10:11</div>
+      <h3>大模型推动智能体的智能跃迁</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101113大.jpeg" alt="大模型推动智能体的智能跃迁" loading="lazy">
+        <figcaption>胶片 10 · 10:11</figcaption>
+      </figure>
+      <p>将智能体演进划分为反应式、目标驱动、自适应和社交智能四阶段，并标红突出「自适应智能」阶段。自进化智能体被定位为实现环境适应性与自主性的关键跃迁。</p>
+    </article>
+
+    <article id="slide-11">
+      <div class="slide-badge">第 11 页 · 10:12</div>
+      <h3>自进化智能体定义</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101228大.jpeg" alt="自进化智能体定义" loading="lazy">
+        <figcaption>胶片 11 · 10:12</figcaption>
+      </figure>
+      <p>定义自进化智能体为能持续与环境交互、自主发现不足、经验沉淀复用并持续自我改进的系统。核心展示环境交互→发现局限→知识积累→持续改进的四阶段循环模型。</p>
+    </article>
+
+    <article id="slide-12">
+      <div class="slide-badge">第 12 页 · 10:13</div>
+      <h3>自进化智能体：迈向 AGI 的关键阶段</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101359大.jpeg" alt="自进化智能体：迈向 AGI 的关键阶段" loading="lazy">
+        <figcaption>胶片 12 · 10:13</figcaption>
+      </figure>
+      <p>SEA 使 AI 从知识系统变为行动系统，符号 AI（心智发展）与具身 AI（身体发展）两条路径汇聚于 SEA，最终通向 AGI 的「终极时刻」。</p>
+    </article>
+
+    <article id="slide-13">
+      <div class="slide-badge">第 13 页 · 10:16</div>
+      <h3>龙虾比喻：从聊天到干活</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101626大.jpeg" alt="龙虾比喻：从聊天到干活" loading="lazy">
+        <figcaption>胶片 13 · 10:16</figcaption>
+      </figure>
+      <p>用「龙虾 = 大模型 + 手脚/记忆」概括当下主流 Agent 架构，核心价值是推动 AI 从作诗到做事、从聊天到干活的跨越。</p>
+    </article>
+
+    <article id="slide-14">
+      <div class="slide-badge">第 14 页 · 10:16</div>
+      <h3>GenericAgent 章节封面</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101648大.jpeg" alt="GenericAgent 章节封面" loading="lazy">
+        <figcaption>胶片 14 · 10:16</figcaption>
+      </figure>
+      <p>GA 专场标题页：「GenericAgent (GA)：一个自进化智能体」，副标题为 A Token Efficient Self-Evolving Autonomous LLM Agent by Maximizing Context Information Density。</p>
+    </article>
+
+    <article id="slide-15">
+      <div class="slide-badge">第 15 页 · 10:16</div>
+      <h3>GenericAgent vs OpenClaw</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101656大.jpeg" alt="GenericAgent vs OpenClaw" loading="lazy">
+        <figcaption>胶片 15 · 10:16</figcaption>
+      </figure>
+      <p>对比 GA 与 OpenClaw 在代码规模、学习能力、工具体系、国产场景和安全部署等维度的差异。展示 GA 开源后登顶 GitHub Trending 榜首、获 13.2K stars 的热度数据。</p>
+    </article>
+
+    <article id="slide-16">
+      <div class="slide-badge">第 16 页 · 10:18</div>
+      <h3>龙虾之魂：百万级技能库</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101813大.jpeg" alt="龙虾之魂：百万级技能库" loading="lazy">
+        <figcaption>胶片 16 · 10:18</figcaption>
+      </figure>
+      <p>介绍自研 DataHub-Skills 资源库，已聚合 140 万个技能。展示智能体通过技能探索与组合，在零人工干预下自主学习完成小红书发帖等复杂任务的案例。</p>
+    </article>
+
+    <article id="slide-17">
+      <div class="slide-badge">第 17 页 · 10:18</div>
+      <h3>媒体报道</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101858大.jpeg" alt="媒体报道" loading="lazy">
+        <figcaption>胶片 17 · 10:18</figcaption>
+      </figure>
+      <p>展示 GenericAgent 的社会影响力：相关话题多次登顶微博热搜，央视持续报道阅读量超 44 万，20 余家主流媒体跟进报道。</p>
+    </article>
+
+    <article id="slide-18">
+      <div class="slide-badge">第 18 页 · 10:19</div>
+      <h3>GA 的基本能力与核心架构</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101941大.jpeg" alt="GA 的基本能力与核心架构" loading="lazy">
+        <figcaption>胶片 18 · 10:19</figcaption>
+      </figure>
+      <p>详细介绍 GA 全链路自主进化能力，包括自主技能搜索、Sub-Agent 协同、心跳驱动内核、长任务弹性规划、网页视觉控制和未知数据探索等模块。Lifelong Bench 上 GA 在 Claude Sonnet 4.6 和 Minimax M2.7 底座上分别达到 100% 和 90% 成功率。</p>
+    </article>
+
+    <article id="slide-19">
+      <div class="slide-badge">第 19 页 · 10:19</div>
+      <h3>GA 的自进化特性</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_101954大.jpeg" alt="GA 的自进化特性" loading="lazy">
+        <figcaption>胶片 19 · 10:19</figcaption>
+      </figure>
+      <p>阐述 GA 从静态工具到主动进化的范式跃迁，展示闭环元认知体系（动态能力生成、深度知识沉淀、自我审视、闭环质量控制）。右侧提供 Python 代码调用示例。</p>
+    </article>
+
+    <article id="slide-20">
+      <div class="slide-badge">第 20 页 · 10:20</div>
+      <h3>GA 的极低 Token 消耗</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102010大.jpeg" alt="GA 的极低 Token 消耗" loading="lazy">
+        <figcaption>胶片 20 · 10:20</figcaption>
+      </figure>
+      <p>对比 GA、OpenClaw 和 Claude Code 在复杂任务上的 Token 消耗，GA 仅为 OpenClaw 的 1/3～1/10。总 Token 数 GA 188,829 vs OpenClaw 633,101 vs Claude Code 537,413，且保持高成功率。</p>
+    </article>
+
+    <article id="slide-21">
+      <div class="slide-badge">第 21 页 · 10:20</div>
+      <h3>GA 是自进化智能体的代表</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102052大.jpeg" alt="GA 是自进化智能体的代表" loading="lazy">
+        <figcaption>胶片 21 · 10:20</figcaption>
+      </figure>
+      <p>展示六层自进化能力金字塔（从工具自创到自我复制），并从「高自主性智能体」和「人工主体雏形」两个维度阐述 GA 的环境适应、策略反思及身份连续性等高级认知特征。</p>
+    </article>
+
+    <article id="slide-22">
+      <div class="slide-badge">第 22 页 · 10:21</div>
+      <h3>上下文爆炸与长程任务失败</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102106大.jpeg" alt="上下文爆炸与长程任务失败" loading="lazy">
+        <figcaption>胶片 22 · 10:21</figcaption>
+      </figure>
+      <p>指出 Agent 瓶颈已从模型能力转向系统上下文管理，多轮执行产生的冗余数据淹没关键信息。强调用最少的 Token 办最复杂的事是通往通用 AI 的必经之路。</p>
+    </article>
+
+    <article id="slide-23">
+      <div class="slide-badge">第 23 页 · 10:21</div>
+      <h3>大模型难以解决上下文爆炸</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102128大.jpeg" alt="大模型难以解决上下文爆炸" loading="lazy">
+        <figcaption>胶片 23 · 10:21</figcaption>
+      </figure>
+      <p>通过「Lost in the Middle」和有效长度天花板两组数据，说明基座模型上下文长度存在结构性限制。底部金句：在智能体设计中，极简才是最高级的克制。</p>
+    </article>
+
+    <article id="slide-24">
+      <div class="slide-badge">第 24 页 · 10:22</div>
+      <h3>上下文信息密度是根本</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102214大.jpeg" alt="上下文信息密度是根本" loading="lazy">
+        <figcaption>胶片 24 · 10:22</figcaption>
+      </figure>
+      <p>提出「密度优于长度」的核心观点，对比臃肿上下文与高效工作记忆，并引入完备性、简洁性与自然性构成的「上下文不可能三角」（Context Trilemma）。</p>
+    </article>
+
+    <article id="slide-25">
+      <div class="slide-badge">第 25 页 · 10:22</div>
+      <h3>上下文信息密度是结构性约束</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102228大.jpeg" alt="上下文信息密度是结构性约束" loading="lazy">
+        <figcaption>胶片 25 · 10:22</figcaption>
+      </figure>
+      <p>强调最大化信息密度是上下文管理的基本原则而非可选优化，引用「压缩即智能」和 Hutter Prize。展示从外部辅助元素到高密度 Prompt 的上下文工程漏斗流程。</p>
+    </article>
+
+    <article id="slide-26">
+      <div class="slide-badge">第 26 页 · 10:22</div>
+      <h3>夯实核心能力是根本</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102250大.jpeg" alt="夯实核心能力是根本" loading="lazy">
+        <figcaption>胶片 26 · 10:22</figcaption>
+      </figure>
+      <p>智能设计的本质是做减法，找到最小完备能力集：工具接口、上下文管理和记忆建模三大支柱。以雅虎 vs 谷歌对比说明聚焦核心能力的重要性。</p>
+    </article>
+
+    <article id="slide-27">
+      <div class="slide-badge">第 27 页 · 10:23</div>
+      <h3>最小工具集</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102321大.jpeg" alt="最小工具集" loading="lazy">
+        <figcaption>胶片 27 · 10:23</figcaption>
+      </figure>
+      <p>阐述工具冗余是智能体的「隐性杀手」，对比穷举式与组合式架构。实验数据表明精简工具集配合 DFSDT 算法在大模型工具调用上显著优于传统 ReACT 方法。</p>
+    </article>
+
+    <article id="slide-28">
+      <div class="slide-badge">第 28 页 · 10:23</div>
+      <h3>工具极简的可能性</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102345大.jpeg" alt="工具极简的可能性" loading="lazy">
+        <figcaption>胶片 28 · 10:23</figcaption>
+      </figure>
+      <p>通过 Claude Code、OpenDevin 和 GenericAgent 的工具调用分布数据，证明工具调用呈长尾分布，少数高频工具承担绝大部分任务，大而全的工具箱是伪需求。</p>
+    </article>
+
+    <article id="slide-29">
+      <div class="slide-badge">第 29 页 · 10:24</div>
+      <h3>GA 工具全景图</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102405大.jpeg" alt="GA 工具全景图" loading="lazy">
+        <figcaption>胶片 29 · 10:24</figcaption>
+      </figure>
+      <p>展示 GA 工具极简主义设计：文件管理、代码执行、网页交互、记忆管理和人工干预 5 大类 9 个原子工具，通过组合解决复杂任务而非开发复杂单一工具。</p>
+    </article>
+
+    <article id="slide-30">
+      <div class="slide-badge">第 30 页 · 10:24</div>
+      <h3>生长哲学：能力从种子生长</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102440大.jpeg" alt="生长哲学：能力从种子生长" loading="lazy">
+        <figcaption>胶片 30 · 10:24</figcaption>
+      </figure>
+      <p>对比传统「蓝图建房」工程范式与「播下种子」有机生长范式，引用 Lehman 软件演化定律。右侧展示 GA 在实际使用中「长出来」的股票监控流程案例。</p>
+    </article>
+
+    <article id="slide-31">
+      <div class="slide-badge">第 31 页 · 10:25</div>
+      <h3>技能树自主生长</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102517大.jpeg" alt="技能树自主生长" loading="lazy">
+        <figcaption>胶片 31 · 10:25</figcaption>
+      </figure>
+      <p>技能树是智能体的能力清单与学习导航，通过对效用（35%）、广度（25%）、深度（25%）和创新（15%）四维度加权计算，确保自主探索是需求驱动而非随机游走。</p>
+    </article>
+
+    <article id="slide-32">
+      <div class="slide-badge">第 32 页 · 10:25</div>
+      <h3>压缩表达</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102543大.jpeg" alt="压缩表达" loading="lazy">
+        <figcaption>胶片 32 · 10:25</figcaption>
+      </figure>
+      <p>通过 HTML 简化、历史标签截断、滑动窗口和按需注入四层过滤，将上下文控制在 30K 以内即可达到传统框架 200K-1M 的效果，最高节省约 90% Token。</p>
+    </article>
+
+    <article id="slide-33">
+      <div class="slide-badge">第 33 页 · 10:26</div>
+      <h3>上下文极简实验</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102627大.jpeg" alt="上下文极简实验" loading="lazy">
+        <figcaption>胶片 33 · 10:26</figcaption>
+      </figure>
+      <p>极简探测实验：安装 20 个 Skill 并高强度使用后发送「Hello」，测量 Full Prompt 长度。仅 GA 保持 2,298 tokens（Claude Code 22,821、OpenClaw 43,321），有效阻止上下文爆炸。</p>
+    </article>
+
+    <article id="slide-34">
+      <div class="slide-badge">第 34 页 · 10:27</div>
+      <h3>更少 Token 更能提升性能</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102702大.jpeg" alt="更少 Token 更能提升性能" loading="lazy">
+        <figcaption>胶片 34 · 10:27</figcaption>
+      </figure>
+      <p>在 SOP-Bench、Lifelong AgentBench 等基准上，GA 以更少 Token 实现更高准确率。Lifelong AgentBench 上 GA 仅消耗 Claude Code 的 27.7%、OpenClaw 的 15.5% Token 即达 100% 完成率。</p>
+    </article>
+
+    <article id="slide-35">
+      <div class="slide-badge">第 35 页 · 10:27</div>
+      <h3>记忆分层组织</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102722大.jpeg" alt="记忆分层组织" loading="lazy">
+        <figcaption>胶片 35 · 10:27</figcaption>
+      </figure>
+      <p>GA 核心架构为 L0 元规则、L1 洞察索引（≤30 行）、L2 全局事实、L3 任务技能、L4 会话归档五层记忆。L4 自动归档压缩、分层噪声隔离，L1 作为常驻导航层保持高信噪比规划环境。</p>
+    </article>
+
+    <article id="slide-36">
+      <div class="slide-badge">第 36 页 · 10:28</div>
+      <h3>经验的沉淀与复用</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102804大.jpeg" alt="经验的沉淀与复用" loading="lazy">
+        <figcaption>胶片 36 · 10:28</figcaption>
+      </figure>
+      <p>展示自进化的「记住、提取、应用」闭环流程，以及四条铁律（无行动不记忆、神圣不可更改、禁止存储易变状态、最小充分指标）。引用杜威名言：「我们并不是从经验中学习，而是从对经验的反思中学习。」</p>
+    </article>
+
+    <article id="slide-37">
+      <div class="slide-badge">第 37 页 · 10:28</div>
+      <h3>越用越聪明</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102823大.jpeg" alt="越用越聪明" loading="lazy">
+        <figcaption>胶片 37 · 10:28</figcaption>
+      </figure>
+      <p>五轮重复任务实验中，仅 GA 的时间和 Token 消耗随迭代显著下降，其他模型基本持平。进化并非简单记忆聊天记录，而是将经验提炼为可复用的 L3 级 SOP。</p>
+    </article>
+
+    <article id="slide-38">
+      <div class="slide-badge">第 38 页 · 10:28</div>
+      <h3>技术洞察章节封面</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102841大.jpeg" alt="技术洞察章节封面" loading="lazy">
+        <figcaption>胶片 38 · 10:28</figcaption>
+      </figure>
+      <p>第二部分章节过渡页：「自进化智能体的技术洞察 / GenericAgent Technical Insights」，标志演讲从技术背景转入 GA 核心架构与方法论深入剖析。</p>
+    </article>
+
+    <article id="slide-39">
+      <div class="slide-badge">第 39 页 · 10:28</div>
+      <h3>技能的本质</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102856大.jpeg" alt="技能的本质" loading="lazy">
+        <figcaption>胶片 39 · 10:28</figcaption>
+      </figure>
+      <p>将 Skill 定义为 Knowledge + Action + Judgment + Fluency 构成的隐性知识（Tacit Knowledge）。技能难以完全言传、高度情境依赖、需长期实践内化，最终表现为「直觉」，引用波兰尼「We know more than we can tell」。</p>
+    </article>
+
+    <article id="slide-40">
+      <div class="slide-badge">第 40 页 · 10:29</div>
+      <h3>技能表示</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102922大.jpeg" alt="技能表示" loading="lazy">
+        <figcaption>胶片 40 · 10:29</figcaption>
+      </figure>
+      <p>技能表示非绝对客观，与基座模型「认知天赋」高度相关。同任务下 Claude 4.6 生成可迁移方法模板，Qwen 3.5 则给出含具体 URL 和操作细节的执行 SOP。</p>
+    </article>
+
+    <article id="slide-41">
+      <div class="slide-badge">第 41 页 · 10:29</div>
+      <h3>人类专家经验沉淀</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_102944大.jpeg" alt="人类专家经验沉淀" loading="lazy">
+        <figcaption>胶片 41 · 10:29</figcaption>
+      </figure>
+      <p>在人类专家监督下的探索式学习将专家经验结晶为动态专家技能库。展示 Supervisor.Skills 项目涵盖论文选题、写作、绘图等六章研究技能内容。</p>
+    </article>
+
+    <article id="slide-42">
+      <div class="slide-badge">第 42 页 · 10:30</div>
+      <h3>知识无需严格表示</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103045大.jpeg" alt="知识无需严格表示" loading="lazy">
+        <figcaption>胶片 42 · 10:30</figcaption>
+      </figure>
+      <p>大模型降低了对知识规范性的要求，Wiki、SOP、专家经验等非结构化形式均可驱动任务执行。核心观点：知识仍然不可或缺，但内容重于形式。</p>
+    </article>
+
+    <article id="slide-43">
+      <div class="slide-badge">第 43 页 · 10:31</div>
+      <h3>知识在养成过程中形成</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103108大.jpeg" alt="知识在养成过程中形成" loading="lazy">
+        <figcaption>胶片 43 · 10:31</figcaption>
+      </figure>
+      <p>知识不是一次性设计的成品，而是在问题中边走边修逐步长成的结构。展示百度地图测距 SOP、数据库字段坑点清单和公众号整理工作流三个真实 L3 沉淀案例，引用 Neurath 修船比喻。</p>
+    </article>
+
+    <article id="slide-44">
+      <div class="slide-badge">第 44 页 · 10:31</div>
+      <h3>实践出真知</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103127大.jpeg" alt="实践出真知" loading="lazy">
+        <figcaption>胶片 44 · 10:31</figcaption>
+      </figure>
+      <p>真正有价值的知识难以先验表达，需在实践中实验、校正、沉淀。四步流程：进入任务→暴露盲点→获取反馈→固化知识。以智能体学习百度地图测距工具测量篮球场的案例说明。</p>
+    </article>
+
+    <article id="slide-45">
+      <div class="slide-badge">第 45 页 · 10:31</div>
+      <h3>知识的相对性</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103149大.jpeg" alt="知识的相对性" loading="lazy">
+        <figcaption>胶片 45 · 10:31</figcaption>
+      </figure>
+      <p>对比传统全量预装与 GA「按需补盲」两种知识观。世界知识无穷尽，应轻量基模 + 动态补齐影响任务成功的私域盲点，以实用主义替代静态正确。</p>
+    </article>
+
+    <article id="slide-46">
+      <div class="slide-badge">第 46 页 · 10:32</div>
+      <h3>人机交互原则</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103218大.jpeg" alt="人机交互原则" loading="lazy">
+        <figcaption>胶片 46 · 10:32</figcaption>
+      </figure>
+      <p>对比命令式架构与 SEA 目标导向架构：从极细粒度「如何做」到高度抽象「做什么」，认知负荷由系统内部元认知引擎接管。展示认知系统、记忆机制与工具集成的技术架构图。</p>
+    </article>
+
+    <article id="slide-47">
+      <div class="slide-badge">第 47 页 · 10:32</div>
+      <h3>双系统架构</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103254大.jpeg" alt="双系统架构" loading="lazy">
+        <figcaption>胶片 47 · 10:32</figcaption>
+      </figure>
+      <p>System 1（快思考）依托技能库模式匹配执行高频任务，System 2（慢思考）由 LLM 自主规划、工具试错处理长尾未知。进化本质是将慢思考沉淀为快直觉。</p>
+    </article>
+
+    <article id="slide-48">
+      <div class="slide-badge">第 48 页 · 10:33</div>
+      <h3>实践课程设置</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103315大.jpeg" alt="实践课程设置" loading="lazy">
+        <figcaption>胶片 48 · 10:33</figcaption>
+      </figure>
+      <p>四阶段课程：单步工具任务→多步工作流→开放环境任务→长周期自主任务，每阶段设明确学习目标与评估指标。设计原则是从低风险、强反馈、可复盘任务逐步走向开放环境复杂任务。</p>
+    </article>
+
+    <article id="slide-49">
+      <div class="slide-badge">第 49 页 · 10:33</div>
+      <h3>本地训练与能力内化</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103346大.jpeg" alt="本地训练与能力内化" loading="lazy">
+        <figcaption>胶片 49 · 10:33</figcaption>
+      </figure>
+      <p>将 L4 成功轨迹经整合过滤后通过本地微调内化为模型参数，实现 System-1 式直觉执行。低 Token 消耗使端侧数据飞轮成为可能，对比 OpenClaw-RL 云端训练方案。</p>
+    </article>
+
+    <article id="slide-50">
+      <div class="slide-badge">第 50 页 · 10:34</div>
+      <h3>从个体智能走向组织智能</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103359大.jpeg" alt="从个体智能走向组织智能" loading="lazy">
+        <figcaption>胶片 50 · 10:34</figcaption>
+      </figure>
+      <p>自进化代理重塑企业组织架构，展示组织智能体（协调者）连接人类成员与数字助手的框架。借鉴唐代三省制等历史制度拓扑研究，发现最优架构因模型而异。</p>
+    </article>
+
+    <article id="slide-51">
+      <div class="slide-badge">第 51 页 · 10:34</div>
+      <h3>SEA-Eval 评测体系</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103408大.jpeg" alt="SEA-Eval 评测体系" loading="lazy">
+        <figcaption>胶片 51 · 10:34</figcaption>
+      </figure>
+      <p>传统评测过度依赖孤立任务片段和静态成功率，SEA-Eval 聚焦评估连续任务序列中的进化增益、进化稳定性和隐式对齐收敛能力。GA 相较 OpenClaw 展现更稳定的进化增益。</p>
+    </article>
+
+    <article id="slide-52">
+      <div class="slide-badge">第 52 页 · 10:34</div>
+      <h3>自进化智能体安全新问题</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103424大.jpeg" alt="自进化智能体安全新问题" loading="lazy">
+        <figcaption>胶片 52 · 10:34</figcaption>
+      </figure>
+      <p>SEA 风险从内容错误升级为可执行、可传播、可持续的系统性行为风险。梳理模型/框架层、生态层和运行时层三层风险，引用国家对 OpenClaw 的安全预警。</p>
+    </article>
+
+    <article id="slide-53">
+      <div class="slide-badge">第 53 页 · 10:34</div>
+      <h3>智能体安全是系统工程</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103438大.jpeg" alt="智能体安全是系统工程" loading="lazy">
+        <figcaption>胶片 53 · 10:34</figcaption>
+      </figure>
+      <p>安全目标非永不犯错，而是确保可控、可观测、可恢复。介绍 SafeHarness 四层防御框架：INFORM（输入处理）、VERIFY（决策验证）、CONSTRAIN（动作约束）、CORRECT（状态纠正）。</p>
+    </article>
+
+    <article id="slide-54">
+      <div class="slide-badge">第 54 页 · 10:34</div>
+      <h3>结语：无为而无不为</h3>
+      <figure>
+        <img src="/assets/2026-07-04-ai-agent-conference/大模型驱动的自进化智能体/IMG_20260702_103451大.jpeg" alt="结语：无为而无不为" loading="lazy">
+        <figcaption>胶片 54 · 10:34</figcaption>
+      </figure>
+      <p>演讲结束致谢页，借用老子「无为而无不为」寓意自进化智能体追求的最高境界。展示 GenericAgent 项目二维码与技术报告链接，邀请扫码了解更多。</p>
+    </article>
+
+  </main>
+</div>
+
+<div id="lightbox" role="dialog" aria-label="图片预览">
+  <img src="" alt="预览">
+</div>
+
+<script>
+  const lb = document.getElementById('lightbox');
+  const lbImg = lb.querySelector('img');
+  document.querySelectorAll('figure img').forEach(img => {
+    img.addEventListener('click', () => {
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lb.classList.add('open');
+    });
+  });
+  lb.addEventListener('click', () => lb.classList.remove('open'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
+</script>
+
+</body>
+</html>
