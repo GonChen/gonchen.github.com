@@ -1,19 +1,21 @@
 #!/bin/bash
-# Deploy VitePress site to GitHub Pages
+# Deploy static site to GitHub Pages
 set -e
 
 cd "$(dirname "$0")"
 
-echo "🔨 Building VitePress..."
-npm run docs:build
+echo "📦 Preparing static site..."
+DEPLOY_DIR="/tmp/static-deploy-$$"
+mkdir -p "$DEPLOY_DIR"
 
-DEPLOY_DIR="/tmp/vitepress-deploy-$$"
-cp -r docs/.vitepress/dist "$DEPLOY_DIR"
+cp index.html "$DEPLOY_DIR/"
+cp -r pages assets public templates "$DEPLOY_DIR/"
 echo "blog.coolgpu.cn" > "$DEPLOY_DIR/CNAME"
-cd "$DEPLOY_DIR"
 
-echo "🚀 Deploying to gh-pages branch..."
+cd "$DEPLOY_DIR"
 touch .nojekyll
+
+echo "🚀 Deploying to GitHub Pages..."
 git init
 git config user.name "chen"
 git config user.email "chen@qq.com"
@@ -23,4 +25,4 @@ git commit -m "deploy: $(date '+%Y-%m-%d %H:%M')"
 git branch -M master
 git push --force origin master
 
-echo "✅ Deployed! https://gonchen.github.io/"
+echo "✅ Deployed! https://blog.coolgpu.cn/"
