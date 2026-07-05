@@ -112,11 +112,8 @@
     <h2>问题现象</h2>
 
     <p>典型报错（Cursor 日志）：</p>
-    <pre><code>Failed to establish a socket connection to proxies: PROXY 127.0.0.1:1080
-getaddrinfo ENOTFOUND api2.cursor.sh
+    <pre><code>getaddrinfo ENOTFOUND api2.cursor.sh
 missing proxy host context during addCertificatesV2; using safe no-proxy defaults</code></pre>
-
-    <p>同时可能遇到：把 <code>http.proxy</code> 误设为 <code>http://127.0.0.1:1080</code>（1080 是 SOCKS 端口，不是 HTTP），v2ray 日志出现大量 <code>unknown Socks version: 67</code>。</p>
 
     <h2>根因：Cursor 是多进程架构</h2>
 
@@ -273,8 +270,6 @@ alias cursor-tun-status='sudo python3 ~/.V2rayU/cursor-tun-mac.py status'</code>
   "cursor.general.disableHttp2": true
 }</code></pre>
 
-    <p><strong>不要</strong>将 <code>http.proxy</code> 设为 <code>http://127.0.0.1:1080</code>——1080 是 SOCKS 端口，用 HTTP 协议连接会失败。</p>
-
     <p>V2rayU 可切回 PAC / 规则模式，不必开「全局模式」；分流脚本独立工作。</p>
 
     <h2>踩坑记录</h2>
@@ -286,12 +281,7 @@ alias cursor-tun-status='sudo python3 ~/.V2rayU/cursor-tun-mac.py status'</code>
         </thead>
         <tbody>
           <tr>
-            <td><code>unknown Socks version: 67</code></td>
-            <td>把 SOCKS 端口 1080 当 HTTP 代理用</td>
-            <td>HTTP 代理用 1087；或 SOCKS 协议写 <code>socks5://127.0.0.1:1080</code></td>
-          </tr>
-          <tr>
-            <td>改完 proxy 仍连 1080</td>
+            <td>改完 proxy 不生效</td>
             <td>Cursor 未完整重启，配置未热更新</td>
             <td>Cmd+Q 退出后重开</td>
           </tr>
