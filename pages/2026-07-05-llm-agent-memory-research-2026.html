@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2026 上半年 Agent Memory 研究全景：从分块拼接到可学习的记忆技能</title>
+  <meta name="date" content="2026-07-05">
+  <meta name="summary" content="梳理 2025–2026 年 LLM Agent Memory 研究：四篇综述打地基，AgeMem/GAM/AutoMem 把记忆管理做成端到端可学习，LongMemEval/Memora/MemBench 补齐评测，治理与安全成为新前线。">
+  <meta name="tags" content="agent-memory, llm, survey, agentic-memory, metamemory">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky; top: 0; z-index: 100;
+      height: 40px; display: flex; align-items: center; padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a { color: #555; text-decoration: none; font-size: 14px; }
+    .site-nav a:hover { color: #111; }
+    .content { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    blockquote {
+      margin: 1rem 0; padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db; color: #555; background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em; background: #f3f4f6; padding: 0.15em 0.4em; border-radius: 3px;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .trend {
+      background: #eef4ff; border-left: 3px solid #2563eb;
+      padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0;
+    }
+    .trend strong { color: #1e40af; }
+    .ref { font-size: 0.85rem; color: #666; }
+    .ref li { margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>2026 上半年 Agent Memory 研究全景：从分块拼接到可学习的记忆技能</h1>
+    <p class="meta"><time datetime="2026-07-05">2026-07-05</time> · Agent Memory · 综述整理</p>
+
+    <p>过去一年，LLM Agent 的「记忆系统」从 RAG 风格的外挂检索，演化成一个有完整生命周期（存储 / 检索 / 更新 / 合并 / 丢弃）的数据管理系统。本文按<strong>「综述打地基 → 架构方法创新 → 评测补齐 → 治理与安全」</strong>四条主线，梳理 2025–2026 年这个方向最值得关注的一批工作。</p>
+
+    <div class="trend">
+      <strong>一句话总览</strong>：方法侧已经从「分模块拼装」走向「端到端可学习的记忆技能」；评测侧刚刚补齐长程、巩固、遗忘三类基准；治理（语义漂移、隐私、可遗忘性）正在从边缘议题变成主线。
+    </div>
+
+    <h2>一、四篇综述：先把地图摊开</h2>
+    <p>做任何具体研究前，先看这四份综述，能避免重复造轮子。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>论文</th><th>一句话定位</th><th>时间</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Memory in the Age of AI Agents</td>
+            <td>基础性大综述，约 200 篇论文（截至 2026.01），提出经典的 <strong>3×3×3 分类</strong>（内容 × 形式 × 操作）</td>
+            <td>2025.12</td>
+          </tr>
+          <tr>
+            <td>From Storage to Experience</td>
+            <td>从「存储」到「经验」的演化视角，弥合 OS 工程派与认知科学派的分裂</td>
+            <td>ACL 2026 Findings</td>
+          </tr>
+          <tr>
+            <td>Memory for Autonomous LLM Agents: Mechanisms, Evaluation, and Emerging Frontiers</td>
+            <td>围绕 <code>store / retrieve / update / summarize / discard</code> 五操作展开</td>
+            <td>2026.03</td>
+          </tr>
+          <tr>
+            <td>LLM Agent Memory: A Unified Representation–Management Perspective</td>
+            <td>用「表征—管理」统一框架把任务知识需求与记忆表征打通</td>
+            <td>2026.03</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>另外两份值得收藏的延伸材料：</p>
+    <ul>
+      <li><strong>Tobias Weiss - Agent Memory Research in 2026 (Extended Survey)</strong>：在 Liu 等人综述基础上扩到 220 篇，新增 2026.02–06 的 21 篇，揭示原 taxonomy 未覆盖的交叉主题。</li>
+      <li><strong>ICLR 2026 Workshop: MemAgents</strong>：专门讨论 agentic systems 记忆层的工作坊，看趋势风向必看。</li>
+    </ul>
+
+    <h2>二、架构与方法：前沿在做的事</h2>
+
+    <h3>1. Agentic Memory（AgeMem）— 统一长短期记忆，端到端可优化</h3>
+    <p>ACL 2026 的 <em>Agentic Memory: Learning Unified Long-Term and Short-Term Memory Management for LLM Agents</em>。过去的方法把长期记忆（LTM）和短期记忆（STM）当成两个独立组件，靠启发式或外部控制器拼装。<strong>AgeMem 把二者统一管理，端到端可优化</strong>，不再有不可学习的胶水层。</p>
+    <div class="trend"><strong>趋势信号</strong>：从「分模块」走向「统一可学习」——记忆管理本身正在变成模型可以学的技能，而不是工程师手设的流水线。</div>
+
+    <h3>2. GAM — 层级图结构的 Agentic Memory</h3>
+    <p>ACL 2026 的 <em>GAM: Hierarchical Graph-based Agentic Memory</em>。统一流式记忆（stream-based）方便上下文更新，但容易被瞬时噪声干扰；离散结构化记忆稳定但难适应新知。<strong>GAM 用层级图同时拿到「塑性」和「稳定性」</strong>，缓解 classic stability–plasticity dilemma。</p>
+
+    <h3>3. AutoMem — 把记忆当成可训练的「元记忆」技能</h3>
+    <p>这是我个人认为对 coding agent 实践者最有启发的一条线。<em>AutoMem: Automated Learning of Memory as a Cognitive Skill</em>（arXiv 2607.01224）引入认知科学里的 <strong>metamemory（元记忆）</strong>概念：</p>
+    <blockquote>
+      Memory expertise is a learned skill: knowing <em>what</em> to encode, <em>when</em> to retrieve, <em>how</em> to organize knowledge.
+    </blockquote>
+    <p>它的关键设计是<strong>把文件系统操作升级为一等记忆动作</strong>（first-class memory actions），让模型自己决定怎么管理记忆——而不是只能调用一组固定的工具。记忆技能沿两条轴进步：支撑它的结构（提示、文件 schema、动作空间）和模型使用结构的能力。</p>
+
+    <h3>4. SSGM — 记忆的稳定性与安全治理</h3>
+    <p><em>Governing Evolving Memory in LLM Agents: Risks, Mechanisms, and the SSGM Framework</em>（arXiv 2603.11768）。当记忆从静态检索库变成动态 agentic 机制后，<strong>语义漂移（semantic drift）、隐私漏洞、知识陈旧</strong>等问题集中爆发。SSGM（Stability & Safety Governed Memory）是这一新前沿的代表性框架——记忆治理正式从「事后补丁」走向「系统一等公民」。</p>
+
+    <h2>三、评测：这一年重点补齐的方向</h2>
+    <p>方法侧跑得快，评测侧 2025–2026 才追上来。下面四个基准覆盖了从短到长、从召回到遗忘的不同维度。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Benchmark</th><th>评测重点</th><th>来源</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>LongMemEval</td>
+            <td>五项长程能力：信息抽取、多会话推理、时序推理、知识更新、遗忘</td>
+            <td>ICLR 2025</td>
+          </tr>
+          <tr>
+            <td>Memora (From Recall to Forgetting)</td>
+            <td>跨数周到数月的长对话，强调<strong>记忆巩固</strong>和<strong>频繁知识更新</strong>，而非单纯事实召回</td>
+            <td>ACL 2026 Findings</td>
+          </tr>
+          <tr>
+            <td>MemBench</td>
+            <td>多记忆层级 × 多交互场景的综合指标，弥补单场景评测</td>
+            <td>ACL 2025 Findings</td>
+          </tr>
+          <tr>
+            <td>Anatomy of Agentic Memory</td>
+            <td>经验性分析：benchmark 规模不够、指标与语义效用错配、跨 backbone 差异大、系统成本被忽视</td>
+            <td>2026.02</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>还有一份值得读的反思型工作 <em>Are We Ready For an Agent-Native Memory System?</em>（arXiv 2606.24775）：它批评当前评测把记忆当黑盒、只看端到端 F1/BLEU，呼吁<strong>组件级评测</strong>——不要再把记忆系统当成不可分解的整体。</p>
+
+    <h2>四、可观察的整体趋势</h2>
+
+    <ol>
+      <li><strong>从「检索增强」到「数据管理系统」</strong>：记忆不再只是 RAG，而是带 lifecycle（存储 / 检索 / 更新 / 合并 / 丢弃）的一等系统。</li>
+      <li><strong>从「分块拼接」到「端到端可学习」</strong>：AgeMem、AutoMem 都在把记忆管理变成模型自身的可训练能力。</li>
+      <li><strong>评测正在追方法</strong>：方法侧跑得快，评测侧 2025–2026 才补齐 LongMemEval / Memora / MemBench，且业界开始反思「黑盒端到端指标」的局限。</li>
+      <li><strong>治理与安全成为新前线</strong>：语义漂移、隐私、可遗忘性（the right to forget）从边缘议题变成主线。</li>
+      <li><strong>认知科学回归</strong>：元记忆、可塑性—稳定性、巩固（consolidation）等术语在工程论文中频繁出现——工程派和认知派在重新对话。</li>
+    </ol>
+
+    <hr>
+
+    <h2>参考资料</h2>
+    <ol class="ref">
+      <li>Memory in the Age of AI Agents — <a href="https://arxiv.org/abs/2512.13564">arxiv.org/abs/2512.13564</a></li>
+      <li>From Storage to Experience: A Survey on the Evolution of LLM Agent Memory — ACL 2026 Findings</li>
+      <li>Memory for Autonomous LLM Agents: Mechanisms, Evaluation, and Emerging Frontiers — <a href="https://arxiv.org/html/2603.07670v1">arxiv 2603.07670</a></li>
+      <li>LLM Agent Memory: A Survey from a Unified Representation–Management Perspective — <a href="https://www.preprints.org/manuscript/202603.0359">preprints.org 202603.0359</a></li>
+      <li>Tobias Weiss, Agent Memory Research in 2026 (Extended Survey) — <a href="https://tobias-weiss.org/research/agent-memory-extended-survey/">tobias-weiss.org</a></li>
+      <li>Agentic Memory: Learning Unified LTM and STM Management — <a href="https://aclanthology.org/2026.acl-long.981/">ACL 2026</a></li>
+      <li>GAM: Hierarchical Graph-based Agentic Memory — <a href="https://aclanthology.org/2026.acl-long.1600.pdf">ACL 2026</a></li>
+      <li>AutoMem: Automated Learning of Memory as a Cognitive Skill — <a href="https://arxiv.org/html/2607.01224">arxiv 2607.01224</a></li>
+      <li>Governing Evolving Memory in LLM Agents (SSGM) — <a href="https://doi.org/10.48550/arxiv.2603.11768">arxiv 2603.11768</a></li>
+      <li>LongMemEval — ICLR 2025</li>
+      <li>From Recall to Forgetting: Benchmarking Long-Term Memory (Memora) — ACL 2026 Findings</li>
+      <li>MemBench: Towards More Comprehensive Evaluation — ACL 2025 Findings</li>
+      <li>Anatomy of Agentic Memory — <a href="https://arxiv.org/html/2602.19320v2">arxiv 2602.19320</a></li>
+      <li>Are We Ready For an Agent-Native Memory System? — <a href="https://arxiv.org/html/2606.24775">arxiv 2606.24775</a></li>
+      <li>ICLR 2026 Workshop on Memory for LLM-Based Agentic Systems (MemAgents) — <a href="https://iclr.cc/virtual/2026/workshop/10000792">iclr.cc</a></li>
+    </ol>
+
+  </main>
+</body>
+</html>
