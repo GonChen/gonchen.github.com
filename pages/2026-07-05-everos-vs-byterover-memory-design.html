@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EverOS vs ByteRover：两种记忆系统范式的核心设计对比</title>
+  <meta name="date" content="2026-07-05">
+  <meta name="summary" content="两个开源记忆系统的核心设计对比：EverOS 走 Markdown-first + 框架自动蒸馏的 bottom-up 路线，ByteRover 走 HTML Context Tree + LLM 自策展的 top-down 路线。">
+  <meta name="tags" content="Agent Memory, EverOS, ByteRover, LLM Agent, Architecture">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a {
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .site-nav a:hover { color: #111; }
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; color: #333; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    img { max-width: 100%; height: auto; display: block; margin: 1rem auto; border-radius: 4px; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db;
+      color: #555;
+      background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em;
+      background: #f3f4f6;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .callout {
+      margin: 1.25rem 0;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a5f;
+      font-size: 0.95rem;
+    }
+    .callout strong { color: #1d4ed8; }
+    .callout.warn {
+      background: #fef9c3;
+      border-color: #fde68a;
+      color: #713f12;
+    }
+    .callout.warn strong { color: #a16207; }
+    .vs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 1rem 0;
+    }
+    .vs-card {
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+    .vs-card h4 {
+      margin: 0 0 0.35rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .vs-card.everos {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+    .vs-card.everos h4 { color: #1d4ed8; }
+    .vs-card.brv {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+    .vs-card.brv h4 { color: #15803d; }
+    .vs-card p { margin: 0; font-size: 0.85rem; line-height: 1.55; }
+    @media (max-width: 540px) {
+      .vs-grid { grid-template-columns: 1fr; }
+    }
+    .lead {
+      font-size: 1.05rem;
+      color: #333;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.1em 0.5em;
+      border-radius: 3px;
+      font-size: 0.78rem;
+      background: #eef2ff;
+      color: #3730a3;
+      margin-left: 0.4em;
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>EverOS vs ByteRover：两种记忆系统范式的核心设计对比</h1>
+    <p class="meta">
+      <time datetime="2026-07-05">2026-07-05</time>
+      · 对象：<a href="https://github.com/EverMind-AI/EverOS">EverOS</a> · <a href="https://github.com/campfirein/byterover-cli">ByteRover CLI</a>
+      · 前篇：<a href="/pages/2026-07-05-byterover-agent-native-memory.html">ByteRover 深度解读</a>
+    </p>
+
+    <p class="lead">两个都是给 AI Agent 提供长期记忆的开源项目，但<strong>设计哲学几乎完全相反</strong>。一句话概括：EverOS 是「我自己懂记忆」，ByteRover 是「你来想清楚，我帮你落盘和共享」。</p>
+
+    <div class="vs-grid">
+      <div class="vs-card everos">
+        <h4>EverOS <span class="tag">bottom-up</span></h4>
+        <p>Markdown 为真理源，框架自带 everalgo 算法把对话蒸馏成结构化记忆，并有 OME 离线反思自我精炼。像在做一个会自己整理思路的认知系统。</p>
+      </div>
+      <div class="vs-card brv">
+        <h4>ByteRover CLI <span class="tag">top-down</span></h4>
+        <p>HTML Context Tree 为载体，由调用方 Agent 的 LLM 自己撰写 <code>&lt;bv-topic&gt;</code>，框架只做 schema 校验、写盘、版本控制、团队同步。</p>
+      </div>
+    </div>
+
+    <h2>一、定位差异</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>维度</th><th>EverOS</th><th>ByteRover CLI</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>自我定位</td>
+            <td>本地优先的「记忆运行时」（memory OS）</td>
+            <td>AI 编码 Agent 的「上下文记忆 REPL/CLI」</td>
+          </tr>
+          <tr>
+            <td>主要使用者</td>
+            <td>应用、Agent harness、设备（横向 memory 层）</td>
+            <td>编码 Agent（Cursor/Claude Code/Windsurf…）+ 团队</td>
+          </tr>
+          <tr>
+            <td>生态</td>
+            <td>EverMind 全家桶（Raven / EverAlgo / HyperMem / EverMe / EverMemBench）</td>
+            <td>ByteRover Cloud + Hub/Connectors + 22+ Agent 集成</td>
+          </tr>
+          <tr>
+            <td>License</td>
+            <td>Apache 2.0</td>
+            <td>Elastic 2.0（开源但限制商用竞品）</td>
+          </tr>
+          <tr>
+            <td>语言/栈</td>
+            <td>Python 3.12，asyncio，aiosqlite，LanceDB，Pydantic v2</td>
+            <td>TypeScript/Node，React-Ink TUI，isomorphic-git，Socket.IO</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>二、核心设计哲学（最关键的分野）</h2>
+
+    <h3>EverOS —— Markdown-First，框架自动进化</h3>
+
+    <pre><code>Markdown (.md + YAML frontmatter)   ← 唯一真理源
+   ├─ SQLite     ← 系统状态 / 审计 / cascade 队列（可重建）
+   └─ LanceDB    ← 向量 + BM25 + 标量过滤（可重建）</code></pre>
+
+    <ul>
+      <li>删掉整个 <code>.index/</code> 目录<strong>不会丢失任何记忆</strong>，cascade 守护进程会从 <code>.md</code> 树重建。</li>
+      <li>用户可直接用 VSCode/Obsidian/Vim 编辑 episode 文件，保存后框架只重新嵌入改动的那条 entry（entry-level diff）。</li>
+      <li>框架自带 <code>everalgo</code>（user_memory / agent_memory / rank / knowledge / parser）—— <strong>无状态、无 I/O、无内联 prompt</strong> 的算法包，自己负责「提取 → 蒸馏 → 反思」。</li>
+    </ul>
+
+    <h3>ByteRover —— Context Tree + LLM-as-Curator，框架不持有 LLM</h3>
+
+    <pre><code>.brv/context-tree/   ← &lt;bv-topic&gt; HTML 文件树 + 自动生成 _index.md
+   ├─ &lt;bv-topic path=... title=...&gt;           ← 调用方 LLM 写
+   │     &lt;bv-decision&gt;/&lt;bv-rule&gt;/&lt;bv-pattern&gt;/&lt;bv-fact&gt;…
+   └─ summaries / manifest / archive          ← 框架确定性生成（无 LLM）</code></pre>
+
+    <ul>
+      <li>知识的<strong>结构是 LLM 自己决定并撰写的</strong>（<code>&lt;bv-topic&gt;</code> + 一组受控的 <code>&lt;bv-*&gt;</code> 元素），框架只校验 schema、写盘、生成索引和摘要。</li>
+      <li>工具模式（<code>brv curate</code> protocol）下 <strong>ByteRover 完全不接触任何 LLM</strong>——通过 <code>needs-llm-step</code> / <code>correct-html</code> 状态机把「想内容」的工作外包给调用方 Agent 的 LLM。</li>
+      <li>强调 Git-like 版本控制（branch/commit/merge/push/pull）和团队同步。</li>
+    </ul>
+
+    <div class="callout">
+      <strong>核心洞察：</strong>EverOS 解决的是「记忆如何从原始体验中涌现并自我精炼」；ByteRover 解决的是「已知的知识如何被 Agent 协作地组织、审查和共享」。前者是认知系统，后者是知识工程系统。
+    </div>
+
+    <h2>三、数据模型对比</h2>
+
+    <h3>EverOS：八种业务记忆类型 + 三种写盘策略</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>类型</th><th>归属</th><th>策略</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>episode / atomic_fact / foresight / profile</td><td>user</td><td>daily-log append / single-file rewrite</td></tr>
+          <tr><td>agent_case / agent_skill</td><td>agent</td><td>daily-log / skill 命名目录</td></tr>
+          <tr><td>knowledge_document / knowledge_topic</td><td>global</td><td>knowledge 树</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>通过 <code>&lt;app_id&gt;/&lt;project_id&gt;/&lt;users|agents&gt;/&lt;owner_id&gt;/...</code> 路径分区，scope 编码在路径里而不是 frontmatter 里。frontmatter 用 Pydantic v2 强类型校验，有 4 级字段保护（L1 只读 / L2 系统 / L3 业务 / L4 用户）。</p>
+
+    <h3>ByteRover：扁平化的 Context Tree + 受控 HTML 词汇表</h3>
+
+    <ul>
+      <li>单一数据单元：<code>&lt;bv-topic path="..." title="..."&gt;</code>，子元素包括 <code>&lt;bv-decision&gt;</code>、<code>&lt;bv-rule&gt;</code>、<code>&lt;bv-pattern&gt;</code>、<code>&lt;bv-fact&gt;</code>、<code>&lt;bv-fix&gt;</code>、<code>&lt;bv-diagram&gt;</code>、<code>&lt;bv-task&gt;</code>、<code>&lt;bv-files&gt;</code> 等。</li>
+      <li>没有预定义的「记忆类型」分类——<strong>类型由 path 和元素语义隐式表达</strong>。</li>
+      <li>配套三类派生产物（确定性、无 LLM）：
+        <ul>
+          <li><code>_index.md</code> / <code>index.html</code>（导航，全量重算）</li>
+          <li>summary frontmatter（<code>children_hash</code>、<code>compression_ratio</code>、<code>condensation_order</code>、<code>covers_token_total</code>）—— 层级摘要，类似 Merkle 树</li>
+          <li>manifest / archive</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h2>四、写入 / 读取路径</h2>
+
+    <h3>EverOS 写路径（强一致 + 异步进化）</h3>
+
+    <pre><code>POST /add → buffer (SQLite) → 边界检测 → 1 次 LLM 提取 MemCell
+   → 同步写 episode.md（fsync，立即返回）
+   → 异步：OME 策略生成 atomic_facts / foresight / profile / case / skill
+   → cascade 守护进程 entry-level diff → LanceDB</code></pre>
+
+    <p><strong>一致性保证</strong>：写强一致（md 已落盘），读最终一致（LanceDB 通常亚秒级，最坏 10–15s）。LanceDB 不可用也不阻塞写入，变更缓存在 SQLite 的 <code>md_change_state</code> 队列里，崩溃重启后重放。</p>
+
+    <h3>ByteRover 写路径（HITL 可审查）</h3>
+
+    <pre><code>brv curate "&lt;intent&gt;" → needs-llm-step(generate-html)
+   → 调用方 LLM 产出 &lt;bv-topic&gt; HTML
+   → 框架 schema 校验（最多 4 次重试：1 generate + 3 correct-html）
+   → path-exists 防覆盖（除非 --overwrite，否则返回 existingContent 让 LLM 合并）
+   → 写盘 + detached Phase 4（摘要 / manifest 重建）
+   → 可选 review 流程（approve / reject）</code></pre>
+
+    <p><strong>核心特征</strong>：每次写入都是可审查、可回滚、可版本化的——非常 Git-like。</p>
+
+    <h3>读取</h3>
+
+    <ul>
+      <li><strong>EverOS</strong>：<code>/search</code> 单次 LanceDB 查询 = BM25 + 向量 ANN + 标量过滤（hybrid retrieval）。</li>
+      <li><strong>ByteRover</strong>：<code>brv search</code> 纯 BM25（minisearch，零 LLM 成本）；<code>brv query</code> 才是 LLM 综合答案。论文里描述了五层渐进检索 Tier 0–4。</li>
+    </ul>
+
+    <h2>五、记忆进化（这是 EverOS 的独门武功）</h2>
+
+    <p>EverOS 有 <strong>OME（Offline Memory Engine）</strong>，一套 in-process 的异步策略引擎，策略可在 <code>ome.toml</code> 里热重载开关：</p>
+
+    <ul>
+      <li><code>extract_atomic_facts</code> / <code>extract_foresight</code> / <code>extract_user_profile</code></li>
+      <li><code>extract_agent_case</code> / <code>extract_agent_skill</code>（聚类成技能）</li>
+      <li><strong><code>reflect_episodes</code></strong>（cron，默认关）：选簇 → LLM 合并多条零散 episode 成一条叙事 → 重提原子事实 → 用 <code>deprecated_by</code> 字段废弃原条目。这是真正的「记忆自我精炼」。</li>
+    </ul>
+
+    <p>ByteRover 没有等价的「自动反思」——它的进化机制是：</p>
+
+    <ul>
+      <li><strong><code>brv dream</code></strong>：后台 consolidation（synthesize / consolidate / prune），但是<strong>面向 context tree 的结构整理</strong>，而非语义蒸馏。</li>
+      <li><strong>propagate-summaries / staleness</strong>：当某 topic 变更时，沿摘要树向上传播失效。</li>
+      <li><strong>RuntimeSignalStore</strong>：把「文件级使用/成熟度信号」放在 sidecar 里，不污染策展的 markdown。</li>
+    </ul>
+
+    <div class="callout warn">
+      <strong>对比要点：</strong>EverOS 自动把对话变成结构化长期记忆；ByteRover 把已结构化的知识整理得更紧凑、更可共享。
+    </div>
+
+    <h2>六、多用户 / 多 Agent 模型</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th></th><th>EverOS</th><th>ByteRover</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>检索维度</td>
+            <td><code>user_id</code> × <code>agent_id</code> × <code>app_id</code> × <code>project_id</code> × <code>session_id</code> 五维正交</td>
+            <td><code>projectRoot</code> × <code>worktreeRoot</code> × path × source origin（local/shared）</td>
+          </tr>
+          <tr>
+            <td>隔离方式</td>
+            <td>路径分区（<code>&lt;app&gt;/&lt;project&gt;/users/&lt;user&gt;/...</code>）</td>
+            <td>项目目录隔离（<code>.brv/</code>）+ worktree 指针 + source 链接</td>
+          </tr>
+          <tr>
+            <td>协作</td>
+            <td>无内建云同步（设计上可整目录拷贝/git）</td>
+            <td>ByteRover Cloud + <code>brv vc</code> 完整 git 工作流</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>EverOS 更像「个人/单设备的全息记忆层」；ByteRover 更像「团队共享的项目知识库」。</p>
+
+    <h2>七、工程架构对比</h2>
+
+    <h3>EverOS（DDD 分层，import-linter 强制）</h3>
+
+    <pre><code>entrypoints (cli+api) → service → memory → infra/persistence
+                            ↑
+            component (llm/embedding/parser/rerank) + core + config  横切</code></pre>
+
+    <p>错误体系是 <code>AppError</code> 四分支（Domain/Infrastructure/Capability/Configuration），用 Starlette MRO 派发到 HTTP 状态码。算法边界 <code>everalgo</code> 严格无状态、无 I/O，可被 EverOS Cloud、OpenClaw 插件等不同产品形态复用。</p>
+
+    <h3>ByteRover（多进程守护 + 严格 ESLint 边界）</h3>
+
+    <pre><code>oclif (commands) ─┐
+tui (React/Ink) ──┼──→ Socket.IO transport ──→ server daemon
+webui (Vite) ─────┘                                └─ agent pool (forked 子进程/project)</code></pre>
+
+    <ul>
+      <li><code>tui/</code> 不能 import <code>server/</code>/<code>agent/</code>/<code>oclif/</code>（ESLint 强制）。</li>
+      <li>守护进程通过 Socket.IO 路由所有命令；agent 在 forked 子进程里跑，按项目并发池管理。</li>
+      <li>强调 Outside-In 开发（先有 consumer 再定义 interface）和严格 TDD。</li>
+    </ul>
+
+    <h2>八、一张图总结</h2>
+
+    <pre><code>         对话流 ──自动蒸馏──▶ 结构化记忆            （EverOS 主张）
+                │
+   raw stream ─► episode ─► atomic_fact ─► profile/skill
+                 (OME 异步反思、deprecated_by 废弃、cascade 重建索引)
+
+
+        Agent LLM ──自己策展──▶ &lt;bv-topic&gt; HTML 树   （ByteRover 主张）
+                │
+   intent ─► generate-html ─► schema 校验 ─► 写盘 ─► summary/manifest
+              (协议编排、HITL review、git vc、cloud sync)</code></pre>
+
+    <h2>九、选型建议</h2>
+
+    <div class="vs-grid">
+      <div class="vs-card everos">
+        <h4>选 EverOS 如果你需要</h4>
+        <p>把<strong>对话流</strong>自动变成可检索的长期记忆（聊天机器人、陪伴型 Agent、可穿戴设备）；个人/单设备的全息记忆，希望 md 可读、可手编、可 git；离线反思、技能聚类等「记忆自我进化」能力；Benchmark 驱动（EverMemBench/LoCoMo）。</p>
+      </div>
+      <div class="vs-card brv">
+        <h4>选 ByteRover 如果你需要</h4>
+        <p>给<strong>编码 Agent</strong>（Cursor/Claude Code/Cline…）加可共享、可版本化的项目知识；团队协作、跨机器同步、HITL 审查；不想框架持有 LLM key，让现有 Agent 的 LLM 自己策展知识；Git 风格的 branch/merge 工作流。</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <p>参考文档：EverOS <a href="https://github.com/EverMind-AI/EverOS">源码</a> · <a href="https://arxiv.org/abs/2604.01599">ByteRover 论文 arXiv:2604.01599</a> · 前篇 <a href="/pages/2026-07-05-byterover-agent-native-memory.html">ByteRover 深度解读</a>。</p>
+  </main>
+</body>
+</html>
