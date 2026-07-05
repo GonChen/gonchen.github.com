@@ -209,13 +209,16 @@ chmod +x tun2socks
     <h3>分流脚本</h3>
     <p>脚本路径：<code>~/.V2rayU/cursor-tun-mac.py</code>（约 250 行，仅 Python 标准库 + curl）。</p>
 
-    <p>覆盖的域名（来源 Cursor 官方文档，精简为 11 个）：</p>
-    <pre><code>api2.cursor.sh, api3.cursor.sh, api5.cursor.sh
+    <p>覆盖的域名（来源 Cursor 官方文档 + 实测补充，共 12 个）：</p>
+    <pre><code>api.cursor.com
+api2.cursor.sh, api3.cursor.sh, api5.cursor.sh
 agent.global.api5.cursor.sh, agentn.global.api5.cursor.sh
 repo42.cursor.sh
 marketplace.cursorapi.com, downloads.cursor.com
 authenticate.cursor.sh, authenticator.cursor.sh
 metrics.cursor.sh</code></pre>
+
+    <p><code>api5.cursor.sh</code> 根域名经 DoH 常返回 NXDOMAIN，脚本已改为解析其子域名 <code>agent.global.api5.cursor.sh</code> / <code>agentn.global.api5.cursor.sh</code>。<code>api.cursor.com</code> 是 NetworkService 经 HTTP 代理可覆盖的域名，但 Extension Host / AlwaysLocal 可能直连其 AWS IP，实测需纳入分流列表。</p>
 
     <div class="callout">
       <strong>macOS 与 Linux 原版的关键差异：</strong>
@@ -239,6 +242,10 @@ alias cursor-tun-status='sudo python3 ~/.V2rayU/cursor-tun-mac.py status'</code>
       <li>不用时：<code>cursor-tun-stop</code></li>
     </ol>
 
+    <div class="callout">
+      <strong>启动顺序很重要：</strong>先 <code>cursor-tun-start</code>，再打开（或重启）Cursor。若在分流启动前已打开 Cursor，部分 Extension Host 会保留<strong>分流前的老 TCP 连接</strong>（源地址仍是 <code>10.x</code> 而非 <code>198.18.0.1</code>），路由表改了也不会自动迁移，必须 Cmd+Q 重开。
+    </div>
+
     <h2>验证是否生效</h2>
 
     <h3>A. AlwaysLocal 连接方式变化</h3>
@@ -259,6 +266,71 @@ alias cursor-tun-status='sudo python3 ~/.V2rayU/cursor-tun-mac.py status'</code>
     <h3>D. Cursor 日志无 DNS 失败</h3>
     <pre><code>~/Library/Application Support/Cursor/logs/&lt;latest&gt;/alwaysLocalSingleton.log
 # 不应再出现 ENOTFOUND api2.cursor.sh</code></pre>
+
+    <h3>E. 排查漏网连接</h3>
+    <p>以下命令应<strong>无输出</strong>（或仅有本地回环）。若有 <code>10.x → 公网 IP</code> 的行，说明该进程仍走直连：</p>
+    <pre><code>lsof -i -n -P | rg "Cursor" | rg -v "198\.18\.0\.1:|127\.0\.0\.1:"</code></pre>
+    <p>常见漏网原因：分流启动前已建立的旧连接（Cmd+Q 重开即可）；域名未纳入列表（补域名后重新 <code>cursor-tun-start</code>）。</p>
+
+    <h2>实测：哪些操作真正起作用</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>操作</th><th>效果</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>http.proxy: 1087</code> + <code>proxySupport: override</code></td>
+            <td>✅ 有效</td>
+            <td>覆盖 NetworkService（Chromium），v2ray 日志可见 <code>accepted //api2.cursor.sh [proxy]</code></td>
+          </tr>
+          <tr>
+            <td><code>cursor.general.disableHttp2: true</code></td>
+            <td>✅ 建议保留</td>
+            <td>降低 HTTP/2 与代理组合的兼容问题</td>
+          </tr>
+          <tr>
+            <td>V2rayU「全局模式」</td>
+            <td>❌ 无效</td>
+            <td>只改系统代理，AlwaysLocal 仍直连</td>
+          </tr>
+          <tr>
+            <td>精简分流（本方案）</td>
+            <td>✅ 有效</td>
+            <td>AlwaysLocal 连接变为 <code>198.18.0.1 → AWS/CF IP</code>，tun2socks 无报错</td>
+          </tr>
+          <tr>
+            <td>全局 TUN（<code>0.0.0.0/1</code> 走 utun）</td>
+            <td>❌ 不可用</td>
+            <td>整机流量涌入 SOCKS，V2rayU 连接被 reset/timeout，网络瘫痪（见下节）</td>
+          </tr>
+          <tr>
+            <td>Reload Window</td>
+            <td>❌ 不够</td>
+            <td>子进程与旧 TCP 连接不会完全重建，必须 Cmd+Q</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>不要尝试：全局 TUN + V2rayU SOCKS</h2>
+
+    <p>曾尝试将方案改为全局 TUN（<code>route add -net 0.0.0.0/1 -interface utun200</code>），结果<strong>完全不可用</strong>。日志对比：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>模式</th><th>tun2socks 目标 IP</th><th>结果</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>精简分流</td><td>仅 Cursor IP（如 <code>34.193.62.81</code>）</td><td>正常，零 warn</td></tr>
+          <tr><td>全局 TUN</td><td>国内 CDN <code>59.83.x</code>、<code>206.237.x</code> 等上万次</td><td>SOCKS <code>connection reset</code> 2000+ 次，断网</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>原因：V2rayU 无内置 TUN，全局 TUN 经 tun2socks 把所有应用（浏览器、微信、系统更新）的流量打进 1080 端口，远超 SOCKS 承载能力；国内流量虽在 v2ray routing 里配了 <code>geoip:cn → direct</code>，但已进入 SOCKS 入站后才分流，救不了连接数爆炸。在 V2rayU 环境下，<strong>仅 Cursor IP 的精简分流才是正解</strong>；若需全局 TUN，应换 Clash Verge / sing-box 等带内核 TUN 的客户端。</p>
 
     <h2>与 Cursor settings.json 的配合</h2>
 
@@ -294,6 +366,21 @@ alias cursor-tun-status='sudo python3 ~/.V2rayU/cursor-tun-mac.py status'</code>
             <td>长时间后偶发失败</td>
             <td>Cursor CDN IP 漂移</td>
             <td>重新执行 <code>cursor-tun-start</code></td>
+          </tr>
+          <tr>
+            <td>分流后仍有 <code>10.x → 公网</code> 连接</td>
+            <td>分流启动前已建立的老 TCP 连接</td>
+            <td>Cmd+Q 重开 Cursor；或先 stop 再 start 分流后重开</td>
+          </tr>
+          <tr>
+            <td><code>api.cursor.com</code> 未走代理</td>
+            <td>域名未在分流列表，AlwaysLocal 直连 AWS IP</td>
+            <td>已补入 <code>DOMAINS</code>，重新 <code>cursor-tun-start</code></td>
+          </tr>
+          <tr>
+            <td>全局 TUN 后整机断网</td>
+            <td>所有流量涌入 V2rayU SOCKS，代理过载</td>
+            <td>勿用全局 TUN；保持按 IP 精简分流</td>
           </tr>
           <tr>
             <td>v2ray-core.log 膨胀至 GB 级</td>
