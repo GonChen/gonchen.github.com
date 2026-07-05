@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cursor 3.9+ 在 macOS 上绕过 http.proxy 的精简分流方案（V2rayU + tun2socks）</title>
+  <meta name="date" content="2026-07-05">
+  <meta name="summary" content="Cursor 3.9+ 的 AlwaysLocal 子进程不认 http.proxy 与 V2rayU 全局模式。本文记录一套 macOS 按需分流方案：DoH@SOCKS5 解析 Cursor 域名 → /etc/hosts → utun2socks 主机路由，强制 AI 通道走 V2rayU 1080 出境。">
+  <meta name="tags" content="Cursor, V2rayU, tun2socks, macOS, 代理, 分流">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a {
+      color: #555;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .site-nav a:hover { color: #111; }
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db;
+      color: #555;
+      background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em;
+      background: #f3f4f6;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .callout {
+      margin: 1rem 0;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a5f;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>Cursor 3.9+ 在 macOS 上绕过 http.proxy 的精简分流方案</h1>
+    <p class="meta"><time datetime="2026-07-05">2026-07-05</time> · macOS + V2rayU + tun2socks</p>
+
+    <blockquote>
+      <p>参考：<a href="https://gist.github.com/Anveena/e217b944b90ef738863012edd2bbcdea">Anveena — 解决 Cursor 3.9+ 无法使用 http 代理的 Linux 脚本</a> · <a href="https://cursor.com/cn/docs/enterprise/network-configuration#ip">Cursor 官方网络配置文档</a> · <a href="https://github.com/xjasonlyu/tun2socks">xjasonlyu/tun2socks</a></p>
+    </blockquote>
+
+    <p>升级到 Cursor 3.9 之后，我在 macOS 上配置了 <code>http.proxy</code> 指向 V2rayU 的 HTTP 端口（1087），却发现 AI 对话、索引同步仍然间歇性失败。排查日志后发现：<strong>并非代理本身坏了，而是 Cursor 的部分子进程根本不走应用层代理</strong>。V2rayU 的「全局模式」同样无效——它只是修改系统代理，管不住这些直连进程。</p>
+
+    <p>本文记录一套<strong>按需启停、仅劫持 Cursor 相关 IP</strong> 的 OS 层分流方案。不替换 V2rayU，不开全局 TUN，不降级 Cursor 版本。</p>
+
+    <h2>问题现象</h2>
+
+    <p>典型报错（Cursor 日志）：</p>
+    <pre><code>Failed to establish a socket connection to proxies: PROXY 127.0.0.1:1080
+getaddrinfo ENOTFOUND api2.cursor.sh
+missing proxy host context during addCertificatesV2; using safe no-proxy defaults</code></pre>
+
+    <p>同时可能遇到：把 <code>http.proxy</code> 误设为 <code>http://127.0.0.1:1080</code>（1080 是 SOCKS 端口，不是 HTTP），v2ray 日志出现大量 <code>unknown Socks version: 67</code>。</p>
+
+    <h2>根因：Cursor 是多进程架构</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>进程</th><th>是否遵守 http.proxy / 系统代理</th><th>实际行为</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>NetworkService（Chromium 网络层）</td><td>遵守</td><td>连接 <code>127.0.0.1:1087</code>，走 HTTP 代理</td></tr>
+          <tr><td>AlwaysLocal（AI 核心子进程）</td><td>不遵守</td><td>直连 <code>api2direct.cursor.sh</code> 的 AWS / Cloudflare IP</td></tr>
+          <tr><td>Extension Host</td><td>部分直连</td><td>部分连接绕过代理</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>用 <code>lsof</code> 可以直观看到差异：</p>
+    <pre><code># NetworkService — 走代理
+Cursor  85101  TCP 127.0.0.1:54555 -&gt; 127.0.0.1:1087
+
+# AlwaysLocal — 直连公网（分流前）
+Cursor  85679  TCP 10.158.x.x:56700 -&gt; 32.194.x.x:443</code></pre>
+
+    <h2>为什么 V2rayU「全局模式」也没用</h2>
+
+    <p>V2rayU 的全局模式在 macOS 上做的是<strong>修改系统代理设置</strong>（HTTP/HTTPS → 1087，SOCKS → 1080），告诉「愿意听话的应用」去连本地端口。它<strong>不是</strong>在网卡层截获所有 TCP 包。</p>
+
+    <pre><code>┌─────────────────────────────────────────────────────┐
+│  V2rayU 全局模式 = 系统代理                           │
+│                                                     │
+│  应用 ──(主动查系统代理)──→ 127.0.0.1:1087 ──→ v2ray │
+│         ↑                                           │
+│    不配合的应用 ──────────────────────→ 直连 Internet   │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│  真正的 TUN 全局（Clash TUN / tun2socks 全量路由）    │
+│                                                     │
+│  应用 ──→ 任意 TCP                                   │
+│         ↓                                           │
+│    OS 路由表：流量 → utun → 代理出境（应用无感知）      │
+└─────────────────────────────────────────────────────┘</code></pre>
+
+    <p>此外，<code>config.json</code> 里的 routing 规则只对<strong>已进入 v2ray 入站端口</strong>的流量生效。AlwaysLocal 若根本不连 1080/1087，规则永远不会被触发。</p>
+
+    <h2>方案思路：手术刀式 OS 层分流</h2>
+
+    <p>思路来自 <a href="https://gist.github.com/Anveena/e217b944b90ef738863012edd2bbcdea">Anveena 的 Linux 脚本</a>，我在 macOS 上做了适配。核心不是全局 TUN，而是<strong>只对 Cursor 相关 IP 加主机路由</strong>：</p>
+
+    <pre><code>┌──────────────────────────────────────────────────────────┐
+│  1. 经 SOCKS5 做 DoH 解析 Cursor 域名 → 拿到 IP 列表       │
+│  2. 写入 /etc/hosts（固定域名 → IP）                      │
+│  3. 启动 tun2socks（utun200 → socks5://127.0.0.1:1080）   │
+│  4. 对每个 IP 加主机路由：route add -host IP -interface utun200 │
+│                                                          │
+│  结果：任意进程（含 AlwaysLocal）访问该 IP 均被 OS 导入代理  │
+└──────────────────────────────────────────────────────────┘</code></pre>
+
+    <p>与 <code>http.proxy</code> 的本质区别：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th></th><th><code>http.proxy</code></th><th>本方案</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>作用层</td><td>应用层（Chromium 主动配代理）</td><td><strong>操作系统路由层</strong></td></tr>
+          <tr><td>覆盖范围</td><td>NetworkService 等 Chromium 进程</td><td><strong>所有进程</strong>（含 AlwaysLocal）</td></tr>
+          <tr><td>粒度</td><td>应用内按 URL</td><td>按 IP /32（/128）精确分流</td></tr>
+          <tr><td>是否全局 TUN</td><td>否</td><td><strong>否</strong>（仅 Cursor IP）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>环境准备</h2>
+
+    <h3>V2rayU 端口</h3>
+    <p>确认 V2rayU 正常运行，本地入站：</p>
+    <ul>
+      <li><strong>1080</strong> — SOCKS5（本方案使用）</li>
+      <li><strong>1087</strong> — HTTP（保留给 Cursor <code>http.proxy</code> 作为双保险）</li>
+    </ul>
+
+    <h3>安装 tun2socks</h3>
+    <p>Homebrew 暂无此包，从 GitHub Release 下载 arm64 二进制到 <code>~/.V2rayU/tun2socks</code>：</p>
+    <pre><code>cd ~/.V2rayU
+curl -sL -o tun2socks.zip \
+  "https://github.com/xjasonlyu/tun2socks/releases/download/v2.6.0/tun2socks-darwin-arm64.zip"
+unzip -o tun2socks.zip &amp;&amp; mv tun2socks-darwin-arm64 tun2socks
+chmod +x tun2socks
+./tun2socks -version</code></pre>
+
+    <h3>分流脚本</h3>
+    <p>脚本路径：<code>~/.V2rayU/cursor-tun-mac.py</code>（约 250 行，仅 Python 标准库 + curl）。</p>
+
+    <p>覆盖的域名（来源 Cursor 官方文档，精简为 11 个）：</p>
+    <pre><code>api2.cursor.sh, api3.cursor.sh, api5.cursor.sh
+agent.global.api5.cursor.sh, agentn.global.api5.cursor.sh
+repo42.cursor.sh
+marketplace.cursorapi.com, downloads.cursor.com
+authenticate.cursor.sh, authenticator.cursor.sh
+metrics.cursor.sh</code></pre>
+
+    <div class="callout">
+      <strong>macOS 与 Linux 原版的关键差异：</strong>
+      <code>-device utun200</code>（不是 <code>utun://</code>）；
+      必须加 <code>-interface en0</code> 避免连本地 SOCKS 时路由回环；
+      路由用 <code>route -n add -host IP -interface utun200</code>。
+    </div>
+
+    <h2>日常使用</h2>
+
+    <p>在 <code>~/.zshrc</code> 中可配置别名：</p>
+    <pre><code>alias cursor-tun-start='sudo python3 ~/.V2rayU/cursor-tun-mac.py start'
+alias cursor-tun-stop='sudo python3 ~/.V2rayU/cursor-tun-mac.py stop --clean-hosts'
+alias cursor-tun-status='sudo python3 ~/.V2rayU/cursor-tun-mac.py status'</code></pre>
+
+    <p>完整流程：</p>
+    <ol>
+      <li>确认 V2rayU 已启动：<code>nc -z 127.0.0.1 1080</code></li>
+      <li>启动分流：<code>cursor-tun-start</code></li>
+      <li><strong>Cmd+Q 完全退出 Cursor 后重开</strong>（不要只 Reload Window）</li>
+      <li>不用时：<code>cursor-tun-stop</code></li>
+    </ol>
+
+    <h2>验证是否生效</h2>
+
+    <h3>A. AlwaysLocal 连接方式变化</h3>
+    <p>分流前（直连公网）：</p>
+    <pre><code>Cursor 85679  TCP 10.158.x.x:56700 -&gt; 32.194.x.x:443</code></pre>
+    <p>分流后（经 utun）：</p>
+    <pre><code>Cursor 85679  TCP 198.18.0.1:58051 -&gt; 3.213.55.201:443</code></pre>
+    <p>本地地址变为 <code>198.18.0.1</code>（tun 接口），说明流量已被 OS 导入 tun2socks。</p>
+
+    <h3>B. tun2socks 日志</h3>
+    <pre><code>tail -f /tmp/cursor-tun/tun2socks.log
+# [TCP] 198.18.0.1:58051 &lt;-&gt; 3.213.55.201:443</code></pre>
+
+    <h3>C. v2ray 日志</h3>
+    <pre><code>rg "api2.cursor.sh|repo42" ~/.V2rayU/v2ray-core.log | tail -10
+# accepted //api2.cursor.sh:443 [proxy]</code></pre>
+
+    <h3>D. Cursor 日志无 DNS 失败</h3>
+    <pre><code>~/Library/Application Support/Cursor/logs/&lt;latest&gt;/alwaysLocalSingleton.log
+# 不应再出现 ENOTFOUND api2.cursor.sh</code></pre>
+
+    <h2>与 Cursor settings.json 的配合</h2>
+
+    <p>建议保留以下配置（NetworkService 层双保险）：</p>
+    <pre><code>{
+  "http.proxy": "http://127.0.0.1:1087",
+  "http.proxySupport": "override",
+  "http.proxyStrictSSL": false,
+  "cursor.general.disableHttp2": true
+}</code></pre>
+
+    <p><strong>不要</strong>将 <code>http.proxy</code> 设为 <code>http://127.0.0.1:1080</code>——1080 是 SOCKS 端口，用 HTTP 协议连接会失败。</p>
+
+    <p>V2rayU 可切回 PAC / 规则模式，不必开「全局模式」；分流脚本独立工作。</p>
+
+    <h2>踩坑记录</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>现象</th><th>原因</th><th>处理</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>unknown Socks version: 67</code></td>
+            <td>把 SOCKS 端口 1080 当 HTTP 代理用</td>
+            <td>HTTP 代理用 1087；或 SOCKS 协议写 <code>socks5://127.0.0.1:1080</code></td>
+          </tr>
+          <tr>
+            <td>改完 proxy 仍连 1080</td>
+            <td>Cursor 未完整重启，配置未热更新</td>
+            <td>Cmd+Q 退出后重开</td>
+          </tr>
+          <tr>
+            <td><code>unsupported driver: utun</code></td>
+            <td>tun2socks v2.6 不接受 <code>utun://</code> 写法</td>
+            <td>改用 <code>-device utun200 -interface en0</code></td>
+          </tr>
+          <tr>
+            <td>长时间后偶发失败</td>
+            <td>Cursor CDN IP 漂移</td>
+            <td>重新执行 <code>cursor-tun-start</code></td>
+          </tr>
+          <tr>
+            <td>v2ray-core.log 膨胀至 GB 级</td>
+            <td>日志级别 info + 长期积累</td>
+            <td>定期 <code>: &gt; ~/.V2rayU/v2ray-core.log</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>总结</h2>
+
+    <p>Cursor 3.9+ 的 AI 核心流量由 AlwaysLocal 子进程发起，它在应用层直连目标 IP，既不理会 <code>settings.json</code> 的 <code>http.proxy</code>，也不理会 V2rayU 的系统代理全局模式。要在不降级、不开全局 TUN 的前提下解决，需要在<strong>操作系统路由层</strong>对 Cursor 域名对应的 IP 做精确劫持，经 tun2socks 转入本地 SOCKS 代理出境。</p>
+
+    <p>本方案按需启停、仅影响 Cursor 相关 IP，其余流量直连。若你的网络环境能直达 Cursor 服务器，<code>http.proxy: 1087</code>  alone 可能已够用；但在必须代理出境的场景下，这套 OS 层分流才是可靠解。</p>
+
+    <hr>
+    <p class="meta">脚本：<code>~/.V2rayU/cursor-tun-mac.py</code> · tun2socks：<code>~/.V2rayU/tun2socks</code> · 状态目录：<code>/tmp/cursor-tun/</code></p>
+  </main>
+</body>
+</html>
