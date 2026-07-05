@@ -387,7 +387,71 @@ webui (Vite) ─────┘                                └─ agent pool
    intent ─► generate-html ─► schema 校验 ─► 写盘 ─► summary/manifest
               (协议编排、HITL review、git vc、cloud sync)</code></pre>
 
-    <h2>九、选型建议</h2>
+    <h2>九、给 ByteRover 的建议：记忆的语义生命周期管理</h2>
+
+    <p>EverOS 最值得 ByteRover 学的不是「向量检索」（那是路线分歧），而是<strong>记忆的语义生命周期管理</strong>——原子事实、废弃关系、反思合并。这些都是「写入后如何让记忆自我进化」的概念，和 ByteRover「LLM-curated」哲学不冲突，反而是它的自然延伸：既然写入时 LLM 已经理解了，那让它顺便抽出原子事实、标记取代关系、定期反思合并，是顺理成章的增强。</p>
+
+    <h3>建议 1：激活原子事实（<code>&lt;bv-fact&gt;</code>）的独立检索路径</h3>
+
+    <p>EverOS 的 <code>extract_atomic_facts</code> 策略从每个 episode 蒸馏出<strong>单句原子事实</strong>，独立存索引。这是它检索精度的关键——<code>MaxSim</code> 模式先在密度高 ~28× 的 atomic_fact 表做检索，再 max-pool 回父 episode，能捞回「长文档里某一句」的细粒度匹配。</p>
+
+    <div class="callout">
+      <strong>移植方案：</strong>ByteRover 的受控词汇表里 <code>&lt;bv-fact&gt;</code> 元素已经存在，但当前检索路径没有专门利用它。可以让 <code>brv curate</code> 在写 <code>&lt;bv-topic&gt;</code> 时强制抽取 <code>&lt;bv-fact&gt;</code> 子元素，检索时对 <code>bv-fact</code> 单独建 BM25 子索引，做 topic-level 的 MaxSim——一个 topic 讲 5 件事时，能精确定位到具体那一句。<strong>移植难度：低。</strong>元素已在 schema 里，只是没有检索路径消费它。</p>
+    </div>
+
+    <h3>建议 2：用 <code>superseded-by</code> 表达语义取代关系</h3>
+
+    <p>EverOS 反思合并后，原 episode 不删，而是打 <code>deprecated_by: &lt;merged_entry_id&gt;</code> 标记，搜索自动 <code>WHERE deprecated_by IS NULL</code> 过滤。这区分了两种本质不同的「过时」：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>关系</th><th>语义</th><th>当前 ByteRover 的处理</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>删除</strong></td><td>这条知识错了 / 不要了</td><td><code>brv vc</code> 的 git 历史</td></tr>
+          <tr><td><strong>取代</strong></td><td>这条被那条更完整的替代了</td><td>❌ 无原生表达，只能靠 prune 或手动管理</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>移植方案：</strong>给 <code>&lt;bv-topic&gt;</code> 加 <code>superseded-by="path/to/new"</code> 属性，或在 RuntimeSignalStore sidecar 里加 <code>supersededBy</code> 字段。<code>brv search</code> 默认过滤被取代的 topic，保留 <code>--include-superseded</code> 选项。<strong>移植难度：中。</strong>需要改检索过滤逻辑 + curate 协议增加「取代」语义，但和现有 git vc 正交，不冲突。</div>
+
+    <h3>建议 3：给 <code>brv dream</code> 增加语义反思能力</h3>
+
+    <p>这是最有价值也最深刻的一步。ByteRover 当前的 <code>brv dream</code> 做的是<strong>结构整理</strong>（synthesize / consolidate / prune context tree），不是<strong>语义进化</strong>——它不会把「3 次零散讨论 JWT」合并成「1 条完整的 JWT 决策记录」。而 EverOS 的 <code>reflect_episodes</code> 是真正的「记忆自我精炼」：</p>
+
+    <pre><code># EverOS reflection orchestrator: Select → Merge → Re-extract → Deprecate
+clusters = select_clusters(min_members=2)
+for cluster in clusters:
+    merged = await llm.merge(cluster.episodes)          # LLM 合并成一条叙事
+    new_facts = await extract_atomic_facts(merged)      # 重提原子事实
+    for orig in cluster.episodes:
+        orig.deprecated_by = merged.id                  # 废弃原条目</code></pre>
+
+    <div class="callout warn">
+      <strong>移植方案：</strong>给 <code>brv dream</code> 增加一个 <code>consolidate-semantics</code> 操作——找同 path 前缀或高 BM25 自相似度重叠的多个 <code>&lt;bv-topic&gt;</code>，让调用方 LLM 合并成一条，原条目标 <code>superseded-by</code>。<strong>难点</strong>在「找候选簇」：EverOS 用向量聚类，ByteRover 没向量，得用 path 前缀 + BM25 自相似度 + backlink 图聚类的组合。<strong>移植难度：中。</strong>dream 框架已有，加一个 operation 类型即可，且完全用调用方 LLM，不破坏零基础设施原则。</div>
+
+    <h3>移植优先级</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>建议</th><th>价值</th><th>难度</th><th>推荐</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>① 激活 <code>&lt;bv-fact&gt;</code> 检索路径</td><td>高</td><td>低</td><td>🟢 立刻做</td></tr>
+          <tr><td>② <code>superseded-by</code> 语义关系</td><td>高</td><td>中</td><td>🟢 立刻做</td></tr>
+          <tr><td>③ dream 语义反思</td><td>高</td><td>中</td><td>🟡 下个版本</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>核心洞察：</strong>这三个建议构成一条递进链——<strong>抽细粒度事实 → 标记取代关系 → 定期反思合并</strong>。它们都不要求 ByteRover 引入向量检索或自托管 LLM，完全可以在「LLM-curated HTML + BM25 + sidecar」的现有架构上演进，是 EverOS 路线里和 ByteRover 哲学最兼容的部分。</div>
+
+    <h2>十、选型建议</h2>
 
     <div class="vs-grid">
       <div class="vs-card everos">
