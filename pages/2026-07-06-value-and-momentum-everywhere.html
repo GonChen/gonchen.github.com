@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>价值与动量为何天生一对？——解读《Value and Momentum Everywhere》</title>
+  <meta name="date" content="2026-07-06">
+  <meta name="summary" content="Asness 等 2013 论文：价值与动量跨八大市场收益为正、彼此负相关（股票约 −0.60），组合夏普 1.45——价值投资者也该懂趋势的学术理由。">
+  <meta name="tags" content="因子投资, 价值投资, 动量, 资产配置, 论文解读">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a { color: #555; text-decoration: none; font-size: 14px; }
+    .site-nav a:hover { color: #111; }
+    .content { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.6rem; line-height: 1.35; margin: 0 0 1rem; }
+    h2 { font-size: 1.3rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.08rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    blockquote {
+      margin: 1.2rem 0;
+      padding: 0.8rem 1.1rem;
+      border-left: 3px solid #2563eb;
+      color: #333;
+      background: #eef4ff;
+      border-radius: 0 4px 4px 0;
+    }
+    blockquote p:last-child { margin-bottom: 0; }
+    code { font-family: "SF Mono", "Fira Code", "Consolas", monospace; font-size: 0.9em; background: #f3f4f6; padding: 0.15em 0.4em; border-radius: 3px; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.55rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .lead { font-size: 1.05rem; color: #444; margin-bottom: 1.5rem; }
+    .highlight { background: #fff8d4; padding: 0.05em 0.2em; border-radius: 2px; }
+    strong { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>价值与动量为何天生一对？<br>——解读《Value and Momentum Everywhere》</h1>
+    <p class="meta"><time datetime="2026-07-06">2026-07-06</time> · 因子投资 · 论文解读</p>
+
+    <p class="lead">
+      价值投资者和趋势交易者常被当成对立的两派：一个买跌（便宜了更划算），一个买涨（强者恒强）。但 2013 年发表在 <em>Journal of Finance</em> 的一篇论文，用横跨八大市场的数据给出一个反直觉的结论——这两套看似相反的策略，其实是<strong>天生一对</strong>：组合起来，比单独用任何一个都好。
+    </p>
+
+    <p>
+      这篇论文就是 Asness、Moskowitz、Pedersen 三人的 <em>Value and Momentum Everywhere</em>（价值与动量无处不在）。它是因子投资领域的里程碑，也是给「价值投资者要不要学趋势」这个问题最硬的学术回答。本文把它的核心观点和方法拆给你看。
+    </p>
+
+    <h2>一句话结论</h2>
+
+    <blockquote>
+      <p><strong>价值与动量是两个长期为正、却彼此负相关的收益因子。把它们组合，风险调整后的收益显著高于任一单策略。</strong>这不是和稀泥的「都要」，而是数据上的「最优」。</p>
+    </blockquote>
+
+    <h2>论文做了什么：把两个因子拉到同一张桌子上</h2>
+
+    <p>
+      在这篇论文之前，学术界研究价值（低估值股票未来跑赢）和动量（近期强势股继续跑赢），大多各自为战、而且基本只看美国股票。三位作者的贡献，是<strong>第一次把它们放在同一个框架里、跨很多种资产一起检验</strong>。
+    </p>
+
+    <p>他们覆盖了<strong>八大市场与资产类别</strong>：</p>
+    <ul>
+      <li>四个股票市场：美国、英国、欧洲大陆、日本</li>
+      <li>四个非股票市场：货币、商品、债券、国家股指</li>
+    </ul>
+
+    <p>
+      对每一类资产，他们用经典信号构造「价值组合」和「动量组合」：<strong>价值</strong>用账面市值比（book-to-market）一类指标，买便宜的、卖贵的；<strong>动量</strong>用过去 12 个月（剔除最近 1 个月）的收益率排序，买涨得多的、卖跌得多的。然后看这两个组合各自的收益，以及它们之间的关系。
+    </p>
+
+    <h2>发现一：两个因子，在哪都有效</h2>
+
+    <p>
+      第一个结果并不意外，但分量很重：<strong>价值与动量的收益溢价，在八个市场里全部显著为正</strong>。不是美股独有的现象，不是某个时代的偶然——从 1972 到 2011 年、跨越股票债券商品货币，这两个因子都在持续起作用。
+    </p>
+
+    <p>
+      这已经足以说明：价值与动量不是「某种有效的小技巧」，而是市场里<strong>结构性的、跨资产普遍存在的规律</strong>。
+    </p>
+
+    <h2>发现二：它俩居然是负相关的</h2>
+
+    <p>
+      真正让人意外的是第二个发现。<strong>价值和动量的收益，彼此负相关</strong>——一个赚得多的时候，另一个往往赚得少。
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>相关性</th><th>数值</th><th>含义</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>价值 ↔ 动量（美国股票）</td><td><strong>约 −0.60</strong></td><td>强烈负相关</td></tr>
+          <tr><td>价值 ↔ 动量（跨资产平均）</td><td>约 −0.49</td><td>稳定负相关</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      为什么这是好事？因为<strong>两个都赚钱、又彼此负相关</strong>的策略，正是分散组合梦寐以求的原料。把它们放在一起，总收益不怎么打折，但波动会相互抵消——风险调整后的收益（夏普比率）因此大幅提升。
+    </p>
+
+    <h2>发现三：组合起来，明显更优</h2>
+
+    <p>
+      论文给出的数字很干脆：一个简单的 <strong>50/50 价值 + 动量组合，年化夏普比率达到 1.45</strong>，<strong>跑赢单独的价值、也跑赢单独的动量</strong>，而且是在所有市场里都成立。
+    </p>
+
+    <blockquote>
+      <p>「这个 50/50 价值与动量组合产生 1.45 的年化夏普比率，给本就难以解释的资产定价模型提出了更大的挑战。」——论文原文</p>
+    </blockquote>
+
+    <p>
+      夏普比率 1.45 是什么概念？作为参照，长期持有标普 500 的夏普大约在 0.4–0.5。把两个相反方向的有效因子捏在一起，能把风险调整收益推到一个单策略几乎到不了的高度。
+    </p>
+
+    <h2>为什么会这样：均值回归 vs 趋势延续</h2>
+
+    <p>
+      价值与动量为什么负相关？直觉其实很干净——它们押注的是<strong>相反的市场行为</strong>：
+    </p>
+    <ul>
+      <li><strong>价值</strong>押的是<strong>均值回归</strong>：跌多了的，更可能涨回来。「便宜」是它的信号。</li>
+      <li><strong>动量</strong>押的是<strong>趋势延续</strong>：涨着的，更可能继续涨。「强势」是它的信号。</li>
+    </ul>
+
+    <p>
+      一个是「负自相关」（涨多了会跌），一个是「正自相关」（涨了还会涨）——逻辑上正好相反。所以它们在不同的市场环境里各领风骚：价值在反转市占优，动量在趋势市占优。此消彼长，组合反而平滑。
+    </p>
+
+    <p>
+      论文还进一步发现，价值与动量的收益<strong>跨资产共动</strong>得很厉害（比如美股的价值策略，和欧洲债券的价值策略，相关性比这些资产本身还高），说明背后有<strong>共同的全局风险因子</strong>。作者用一个三因子模型刻画了它，并指出<strong>全球融资流动性风险</strong>（funding liquidity）是这些规律的部分来源——简言之，资金面的紧张与宽松，会同时影响全世界的价值与动量表现。
+    </p>
+
+    <h2>对个人投资者：三个实打实的含义</h2>
+
+    <h3>1. 不要在「价值」和「趋势」之间二选一</h3>
+    <p>
+      很多人以为做投资得先选边站。这篇论文的结论恰恰相反：<strong>两者都留，才是最优解</strong>。你不必放弃价值框架去改做趋势，也不必因为信价值就排斥一切技术分析。它们负相关，组合起来能让你的整体回报更稳、回撤更小。
+    </p>
+
+    <h3>2. 动量是价值投资最好的「把关者」</h3>
+    <p>
+      有学者把这件事说得很到位：「<strong>动量常常扮演价值的把关者——阻止你在见底前买入、或在见顶前卖出。</strong>」
+    </p>
+    <p>
+      这句话戳中了大多数个人投资者最痛的两个错误：</p>
+    <ul>
+      <li><strong>见底前买入</strong>：看着一只股票跌了很多，「觉得便宜了」就去接飞刀，结果越跌越买、深套其中。动量本该提醒你——它还在跌，等趋势企稳再说。</li>
+      <li><strong>见顶前卖出</strong>：手里一只股票赚了不少，「担心回吐」就一次性清仓，结果它继续大涨、你踏空后面一大段。动量本该告诉你——趋势还在，让利润奔跑。</li>
+    </ul>
+    <p>
+      换句话说，价值告诉你「<strong>该买什么</strong>」，动量告诉你「<strong>何时该谨慎、何时该坚持</strong>」。分工，而不是互斥。
+    </p>
+
+    <h3>3. 把「趋势」当作价值仓位的「风险开关」</h3>
+    <p>
+      即便你是个纯粹的价值投资者、完全不打算做趋势交易，这篇论文也给了你一个实用工具：<strong>用一个简单的趋势信号（比如 200 日均线）给你的价值仓位装一个风险开关</strong>。
+    </p>
+    <p>
+      规则很简单：当一只价值股<strong>跌破长期均线</strong>（进入明显的下行趋势）时，它不是说「立刻卖」，而是<strong>触发你重新审视这家公司的论点</strong>——市场可能在用价格告诉你一些你还不知道的事。论点依然成立，可以继续持有甚至加仓；论点被动摇了，就该离场。趋势信号在这里不替代估值判断，它<strong>强迫你在该重新审视时停下来重审</strong>，而不是无脑死扛。
+    </p>
+
+    <blockquote>
+      <p>另一项相关研究（Faber 2007）证实，仅仅用一个 10 月均线（约等于 200 日线）做「在线上持有、在线下持币」的开关，就能把标普 500 的最大回撤从 −83% 砍到 −45%，而年化收益几乎不损失。这就是「趋势做风控叠加」的力量。</p>
+    </blockquote>
+
+    <h2>一个诚实的提醒</h2>
+
+    <p>
+      论文不是万能药，有两点必须说清楚：
+    </p>
+    <ol>
+      <li><strong>动量会「崩盘」</strong>。动量策略在市场急剧反转时（比如危机后的快速反弹）可能短时间内大幅回撤。它的长期为正，靠的是<strong>高盈亏比</strong>（赚的时候赚得多），而不是高胜率。所以用动量，纪律性止损是配套必需品，不是可选配件。</li>
+      <li><strong>A 股 / 港股的本地化还没被严格验证</strong>。这篇论文覆盖的是美欧日等成熟市场。价值+动量的负相关在 A 股是否同样成立、在涨跌停和 T+1 的约束下效果如何，目前没有高质量公开回测。值得用本地数据自己测一遍，再决定配置比例。</li>
+    </ol>
+
+    <h2>结语：全都要，是有道理的</h2>
+
+    <p>
+      「小孩子才做选择，成年人全都要」——这句玩笑话，在价值与动量这件事上，居然是被顶级学术期刊认证的正确答案。Asness 等人用横跨八大市场、近四十年的数据告诉我们：<strong>价值和趋势不是非此即彼的信仰之争，而是负相关、可组合、组合后更优的两块拼图</strong>。
+    </p>
+
+    <p>
+      如果你是价值投资者，不必把趋势当成异端；如果你是趋势交易者，也不必鄙视价值。把两者的长处接上——价值选股、趋势择时与风控——你大概率会比只信一边走得更稳、更远。
+    </p>
+
+    <hr>
+
+    <p style="color:#888;font-size:0.85rem;">
+      <strong>参考</strong>：Clifford S. Asness, Tobias J. Moskowitz, Lasse Heje Pedersen.
+      <em>Value and Momentum Everywhere</em>. The Journal of Finance, Vol. 68, No. 3 (2013), pp. 929–985.
+      相关：Faber《A Quantitative Approach to Tactical Asset Allocation》(2007)；Haghani &amp; Dewey《A Case Study for Using Value and Momentum at the Asset Class Level》(2016)。
+      本文不构成任何投资建议。
+    </p>
+
+  </main>
+</body>
+</html>
