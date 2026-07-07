@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>沐曦股份趋势分析实战：四阶段+趋势模板+量价背驰拆解 7-7 大涨</title>
+<meta name="date" content="2026-07-08">
+<meta name="summary" content="以国产 GPU 沐曦股份(688802)为实战案例，演示如何用 Weinstein 四阶段、Minervini 趋势模板与量价/MACD 背驰拆解 7-7 大涨——并诚实面对新股长均线缺失的方法论困境。">
+<meta name="tags" content="趋势投资,量价背驰,沐曦股份,国产GPU,技术分析,实战案例">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:16px;line-height:1.8;color:#1a1a1a;background:#fafaf6}
+  .wrap{max-width:760px;margin:0 auto;padding:0 18px}
+  .site-nav{position:sticky;top:0;background:rgba(250,250,246,.94);backdrop-filter:saturate(180%) blur(8px);border-bottom:1px solid #ece6d6;padding:10px 18px;font-size:14px;z-index:10}
+  .site-nav a{color:#8b1538;text-decoration:none;font-weight:600}
+  h1{font-family:Georgia,"Songti SC","Noto Serif CJK SC",serif;font-size:1.85rem;line-height:1.35;margin:1.6em 0 .3em;letter-spacing:-.01em}
+  .subtitle{color:#6b6453;font-size:.95rem;margin:0 0 1.4em;font-family:Georgia,"Songti SC",serif}
+  h2{font-family:Georgia,"Songti SC",serif;font-size:1.3rem;margin:2.2em 0 .6em;padding-bottom:.25em;border-bottom:2px solid #8b1538;color:#2a2a2a}
+  h3{font-size:1.06rem;margin:1.6em 0 .5em;color:#8b1538}
+  p{margin:.7em 0}
+  a{color:#8b1538}
+  figure{margin:1.6em 0;text-align:center}
+  figure img{max-width:100%;height:auto;border:1px solid #ece6d6;border-radius:3px;background:#fffff8}
+  figcaption{font-size:.82rem;color:#7a7464;margin-top:.5em;line-height:1.5}
+  table{border-collapse:collapse;width:100%;font-size:.92rem;margin:1em 0}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th,td{border:1px solid #e3dcc8;padding:7px 9px;text-align:left}
+  th{background:#f3eee0;font-weight:600}
+  tr:nth-child(even) td{background:#fcfaf2}
+  code{background:#f0ebda;padding:1px 5px;border-radius:3px;font-size:.88em}
+  blockquote{margin:1.2em 0;padding:.9em 1.1em;background:#fff8ec;border-left:4px solid #c9a227;border-radius:0 4px 4px 0;color:#5a5338}
+  .callout{margin:1.3em 0;padding:1em 1.15em;border-radius:5px;border:1px solid;font-size:.95rem}
+  .callout-warn{background:#fdf0ee;border-color:#e6b5ad;color:#7a2a20}
+  .callout-tip{background:#eef6f0;border-color:#a8cdb4;color:#274d34}
+  .callout-note{background:#f1f0fb;border-color:#bdb6e0;color:#3a3473}
+  .callout-title{font-weight:700;display:block;margin-bottom:.3em;font-family:Georgia,"Songti SC",serif}
+  .disclaimer{background:#fdf0ee;border:1px solid #e6b5ad;color:#7a2a20;padding:1em 1.15em;border-radius:5px;font-size:.9rem;margin:1.4em 0}
+  .disclaimer strong{color:#5a1a12}
+  .keybox{background:#fffdf5;border:1px solid #d9c878;padding:1.1em 1.2em;border-radius:5px;margin:1.4em 0}
+  .keybox h3{margin-top:0;color:#7a5a10}
+  .pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.78rem;font-weight:600;vertical-align:middle}
+  .pass{background:#e6f3ea;color:#1f5130}
+  .fail{background:#fde8e6;color:#8a1a10}
+  .na{background:#eee8d8;color:#6b6453}
+  .warn{background:#fdf0ee;color:#7a2a20}
+  .up{color:#c0392b;font-weight:600}
+  .dn{color:#2f6f4f;font-weight:600}
+  .lead{font-size:1.05rem;color:#3a3a3a}
+  ul,ol{padding-left:1.4em}
+  li{margin:.35em 0}
+  .sources{font-size:.86rem;color:#6b6453;border-top:1px solid #e3dcc8;margin-top:2.4em;padding-top:1em}
+  .sources a{word-break:break-word}
+  .toc{background:#fcfaf2;border:1px solid #e3dcc8;border-radius:5px;padding:.8em 1.2em;font-size:.9rem;margin:1.4em 0}
+  .toc strong{color:#8b1538}
+  .toc ul{margin:.3em 0;padding-left:1.2em}
+  @media(max-width:520px){h1{font-size:1.5rem}body{font-size:15.5px}}
+</style>
+</head>
+<body>
+<nav class="site-nav"><div class="wrap"><a href="/">← CoolGPU</a></div></nav>
+
+<article class="wrap">
+<h1>沐曦股份趋势分析实战：<br>四阶段 + 趋势模板 + 量价背驰拆解 7-7 大涨</h1>
+<p class="subtitle">一个国产 GPU 新股（688802），如何用趋势投资方法论读懂它的"涨"与"虚" · 2026-07-08</p>
+
+<div class="disclaimer">
+  <strong>⚠ 免责声明</strong>：本文是<strong>趋势投资方法论的实战演示</strong>，以沐曦股份(688802)作为真实案例讲解 Weinstein 四阶段、Minervini 趋势模板与量价背驰的判读流程。<strong>不构成任何投资建议，不含目标价、不含买卖评级、不含仓位推荐。</strong>作者写作时未持有该标的。文中"若我执行"类表述皆为方法演示，非操作建议。股市有风险，决策请自负。数据截至 2026-07-07 收盘，来源 akshare 东财接口（前复权），可能因接口波动存在误差。
+</div>
+
+<p class="lead">2026 年 7 月 7 日，国产 GPU 沐曦股份-U（688802）盘中逼近 20% 涨停、最高 <strong>876 元</strong>，一天收复三天跌幅，领涨算力芯片。本篇不写"它为什么涨"——那已经讲透了；本篇回答一个更难的问题：<strong>用趋势方法论看，这根大阳线是"真突破"还是"虚晃一枪"？</strong></p>
+
+<div class="toc">
+<strong>目录</strong>
+<ul>
+<li><a href="#event">一、事件回顾与数据声明</a></li>
+<li><a href="#fundamental">二、基本面快照：-U 股的估值坐标系</a></li>
+<li><a href="#stage">三、🔥 趋势定位：Weinstein 四阶段</a></li>
+<li><a href="#template">四、🔥 Minervini 趋势模板打分（新股适配）</a></li>
+<li><a href="#divergence">五、🔥 量价背驰检测：7-7 的两个隐忧</a></li>
+<li><a href="#levels">六、关键价位地图</a></li>
+<li><a href="#framework">七、入场 / 止损 / 退出框架（条件式）</a></li>
+<li><a href="#verdict">八、综合研判</a></li>
+<li><a href="#lessons">九、方法论复盘</a></li>
+</ul>
+</div>
+
+<h2 id="event">一、事件回顾与数据声明</h2>
+<p>7 月 7 日沐曦收 <strong>833.99（+14.09%）</strong>，盘中最高 876（科创板涨停线约 878.8），成交量 4.35 万手、换手 23.49%。三重催化市场已充分讨论：</p>
+<ul>
+<li><strong>外生催化</strong>：英特尔两月内二度上调 Xeon 服务器 CPU（+7~12%），市场解读为算力硬件进入<strong>需求驱动涨价周期</strong>；</li>
+<li><strong>估值传导</strong>：资金从存储→CPU 蔓延，转向挖算力芯片里的估值洼地；</li>
+<li><strong>个股催化</strong>：当天披露沐曦 GPU <strong>Day0 适配腾讯、美团</strong>，大厂生态落地。</li>
+</ul>
+<div class="callout callout-note">
+<span class="callout-title">为什么用沐曦做案例</span>
+它是<strong>新股 + 高波动 + 板块龙头</strong>三合一——新股让"长均线缺失"困境赤裸裸暴露，高波动让量价信号清晰可读，龙头让结论有代表性。这种标的恰是方法论的最好试金石。
+</div>
+<p>本文用到的还有它<strong>上市以来的全部日线（132 个交易日）</strong>。注意一个关键事实：沐曦 <strong>2025-12-17 上市，至今仅约 6.5 个月</strong>——这会反复影响后续判读。</p>
+
+<h2 id="fundamental">二、基本面快照：-U 股的估值坐标系</h2>
+<p>沐曦是科创板 <strong>-U（未盈利）</strong>标的，传统 PE 估值失效。它的坐标系应是<strong>营收增速 + 毛利 + 现金跑道</strong>，而非市盈率。</p>
+<div class="table-wrap"><table>
+<tr><th>指标</th><th>数值</th><th>读数</th></tr>
+<tr><td>营收增速</td><td>2025 同比 +120%；2026Q1 +52.95%</td><td class="up">高速爬坡</td></tr>
+<tr><td>毛利率</td><td>60.05%（2026Q1）</td><td class="up">优秀（芯片设计高毛利）</td></tr>
+<tr><td>净亏损</td><td>2025 全年 -7.9 亿（收窄）；累计亏 &gt;30 亿</td><td class="dn">-U 后缀之源</td></tr>
+<tr><td>负债率</td><td>3.39%</td><td class="up">极低</td></tr>
+<tr><td>总资产 / 每股净资产</td><td>135.6 亿 / 32.74 元</td><td>IPO 募资充实</td></tr>
+<tr><td>总股本 / 市值 @834</td><td>≈4.14 亿股 / ≈3453 亿</td><td>即新闻所谓"3500 亿龙头"</td></tr>
+</table></div>
+<div class="callout callout-warn">
+<span class="callout-title">估值层的一句话：极贵</span>
+PB ≈ <strong>25.5 倍</strong>，PS（市销率）粗算 <strong>200 倍+</strong>。这是把"国产替代 + 商业化加速 + 算力涨价"三重乐观全部提前定价的水平。<strong>现金跑道反而无忧</strong>：135 亿资产对 8 亿年烧，跑道极长——近忧在估值与执行，不在现金。这意味着任何业绩不及预期，估值修正会非常剧烈。
+</div>
+
+<h2 id="stage">三、趋势定位：Weinstein 四阶段</h2>
+<p>Stan Weinstein 的<strong>四阶段分析法</strong>用周线 + 30 周均线把任意股票归入"筑底 / 上升 / 做头 / 下降"之一。下图是沐曦上市以来的周线全景。</p>
+<figure>
+<img src="/assets/2026-07-08-muxi-trend-analysis/stage-weekly.svg" alt="沐曦股份周线与均线，标注IPO高点/底部/突破/阶段顶/回调/7-7">
+<figcaption>沐曦股份 688802 周线（前复权，akshare，截至 2026-07-07）。绿线为 10 周均线，红虚线为 30 周均线（因上市仅 29 周，后半段才有数据）。标注点为关键转折。</figcaption>
+</figure>
+<p>用四阶段语言逐段重读沐曦的 6.5 个月：</p>
+<div class="table-wrap"><table>
+<tr><th>阶段</th><th>时段</th><th>走势</th><th>判读</th></tr>
+<tr><td>IPO 透支</td><td>12/17 首日</td><td>+693%，盘中 895（历史天价）</td><td>新股泡沫顶</td></tr>
+<tr><td>第 4 阶段（下降）</td><td>12/17→2/5</td><td>830 → 492（-41%）</td><td>泡沫消化，7 周挤水</td></tr>
+<tr><td>第 1 阶段（筑底）</td><td>2/5→3 月中</td><td>492–540 箱体，量缩</td><td>供给消化，不再创新低</td></tr>
+<tr><td>第 2 阶段（上升）</td><td>3/24 起突破</td><td>601 → 加速 → 5/7 顶 <strong>843</strong></td><td>突破阻力 + 均线拐头 + 放量</td></tr>
+<tr><td>第 2 阶段回调</td><td>5/8→6/1</td><td>843 → 638（-24%）</td><td>深度回调但未破势</td></tr>
+<tr><td>第 2 阶段续升</td><td>6/3→6/30</td><td>638 → 828</td><td>反弹创新高（盘中）</td></tr>
+<tr><td>调整 + 再启动</td><td>7/1–7/7</td><td>三连阴至 731 → +14% 冲 876</td><td>本文核心事件</td></tr>
+</table></div>
+<div class="keybox">
+<h3>结论：当前处于第 2 阶段（上升期）</h3>
+<p><strong>支持证据</strong>：收盘 834 站在所有短中期均线之上——MA5 762、MA10 770、MA20 749、MA50 740、MA60 728 全部上行，构成<strong>多头排列</strong>；近 20 日上涨日均量（24,980）&gt; 下跌日均量（22,994），"涨放量、跌缩量"结构健康。趋势跟随者的语言应是"持有 / 回踩买"，<strong>不是看空</strong>。</p>
+<p><strong>但置信度要打折</strong> ⚠：沐曦仅 29 周数据，<strong>30 周均线刚成形、样本稀疏</strong>（见图中红虚线后半段）。四阶段判读依赖"长期均线的稳定斜率"，新股这条腿是跛的——这是下一节要正面处理的方法论困境。</p>
+</div>
+
+<h2 id="template">四、Minervini 趋势模板打分（新股适配）</h2>
+<p>Minervini 的<strong>趋势模板（Trend Template）</strong>用 8 条硬规则判定一只股票是否处于"确认上升趋势"。这是把"看图说话"变成"打勾打叉"的利器。但对沐曦这种新股，它会暴露一个尴尬现实：</p>
+<div class="table-wrap"><table>
+<tr><th>#</th><th>条件</th><th>结果</th><th>数据</th></tr>
+<tr><td>1</td><td>收盘价 &gt; MA50</td><td><span class="pill pass">通过</span></td><td>834 &gt; 740</td></tr>
+<tr><td>2</td><td>MA50 &gt; MA150</td><td><span class="pill na">N/A</span></td><td>仅 132 日数据，MA150 不可算</td></tr>
+<tr><td>3</td><td>MA150 &gt; MA200</td><td><span class="pill na">N/A</span></td><td>不可算</td></tr>
+<tr><td>4</td><td>MA200 上行</td><td><span class="pill na">N/A</span></td><td>不可算</td></tr>
+<tr><td>5</td><td>收盘价 &gt; MA200</td><td><span class="pill na">N/A</span></td><td>不可算</td></tr>
+<tr><td>6</td><td>价 ≥ 52 周低 ×1.30</td><td><span class="pill pass">通过</span></td><td>+70%（远超阈值）</td></tr>
+<tr><td>7</td><td>价 ≥ 52 周高 ×0.75</td><td><span class="pill pass">通过</span></td><td>距高点 −7%（贴顶）</td></tr>
+<tr><td>8</td><td>相对强度 RS ≥ 70</td><td><span class="pill pass">通过*</span></td><td>*主观：算力芯片板块龙头</td></tr>
+</table></div>
+<p><strong>可计算 3 条全过，但 8 条里有 5 条不可算。</strong>这正是新股最大的方法论困境：趋势模板的灵魂——长均线多头排列——在新股上根本不存在。</p>
+<div class="callout callout-tip">
+<span class="callout-title">教学点：新股怎么"降级使用"趋势模板</span>
+<ul>
+<li><strong>替代均线</strong>：MA150/200 不可算时，用 <code>日线 MA20/MA60</code> + <code>周线 MA10/MA30</code> 顶上，观察它们是否多头排列、是否上行；</li>
+<li><strong>加重 #6/#7</strong>：距离 52 周高低的位置（沐曦 +70% / −7%）成为更重要的代理指标——既远离底部、又贴近顶部，说明趋势成熟但<strong>不在起步</strong>；</li>
+<li><strong>诚实标注</strong>：在股票凑满 200 个交易日（约 1 年）前，趋势模板最多只能给" provisional（临时）"判定，不可当作完整确认。把这点写在分析里，比装作没看见更专业。</li>
+</ul>
+</div>
+
+<h2 id="divergence">五、量价背驰检测：7-7 的两个隐忧</h2>
+<p>这是本文最关键的一节。我们把 7-7 这个"新高"放到显微镜下，比较它和上一个阶段顶部（5/7）的量价关系。下图是近 90 日日线 + 成交量 + MACD。</p>
+<figure>
+<img src="/assets/2026-07-08-muxi-trend-analysis/daily-macd-divergence.svg" alt="沐曦日线+成交量+MACD，标注5/7阶段顶、6/30、7-7对比点">
+<figcaption>沐曦股份日线（近 90 日，前复权）+ 成交量 + MACD。红圈为关键对比点。重点看 5/7 与 7-7 的 DIF（蓝线）落差。</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<tr><th>指标</th><th>5/7（上轮阶段顶）</th><th>7/7（本轮再启动）</th><th>信号</th></tr>
+<tr><td>收盘价</td><td>842.97</td><td>833.99 <span class="dn">↘</span></td><td class="warn"><strong>未超收盘高点</strong></td></tr>
+<tr><td>盘中价</td><td>850</td><td>876 <span class="up">↗</span></td><td>盘中创新高</td></tr>
+<tr><td>成交量</td><td>33,838</td><td>43,520 <span class="up">↗</span>（+29%）</td><td>放量</td></tr>
+<tr><td>DIF（MACD 动能）</td><td><strong>51.48</strong></td><td><strong>15.57</strong> <span class="dn">↘ −70%</span></td><td class="warn"><strong>顶背驰！</strong></td></tr>
+</table></div>
+<p>两层背离信号同时出现：</p>
+<h3>① MACD 顶背驰（明确）</h3>
+<p>盘中价创了新高（876 &gt; 850），但 MACD 的 DIF 从 <strong>51.5 暴跌到 15.6，腰斩再腰斩</strong>。价格向上、动能向下，这是教科书级的<strong>顶背驰</strong>——说明这轮"新高"是靠情绪和外生催化顶上去的，<strong>内生买力远弱于 5 月那波</strong>。</p>
+<h3>② 放量滞涨 + 上影线拒绝（隐蔽）</h3>
+<p>注意：7-7 的成交量是<strong>放大</strong>的（+29%），表面看"放量配合上涨"很健康。但拆开看——放量却<strong>收在 834，反而低于 5/7 的收盘 843</strong>；盘中冲 876 即回落，留下长上影。<strong>放量却收不上去 = 滞涨</strong>，是大资金借势派发的经典形态。</p>
+<div class="callout callout-warn">
+<span class="callout-title">比"缩量顶背驰"更危险</span>
+新手只警惕"缩量上涨"。但<strong>放量滞涨 + MACD 背驰</strong>往往更凶险：成交量放大制造了"买盘踊跃"的假象，实际是上方抛压沉重、筹码在转移。沐曦 7-7 同时吃了这两记——放量给了假健康，背驰给了真衰竭。
+</div>
+<h3>MACD 当前状态</h3>
+<p>DIF 15.57 &gt; DEA 13.44，<strong>金叉、多头排列、柱状 +4.26</strong>——短期动能仍偏多。但关键在绝对水平：<strong>DIF 只有 15.6，仅为 5 月峰值 51.5 的三成</strong>。这个金叉发生在"低动能区"，是弱势金叉，能否演化为新高突破，存疑。</p>
+
+<h2 id="levels">六、关键价位地图</h2>
+<div class="table-wrap"><table>
+<tr><th>类别</th><th>价位</th><th>含义</th></tr>
+<tr><td>历史天价（盘中）</td><td>895（IPO 首日） / 876（7-7）</td><td>心理天花板</td></tr>
+<tr><td><strong>收盘高点阻力</strong></td><td><strong>842.97（5/7）</strong></td><td class="warn"><strong>多空分水岭：收盘站上才算真突破，背驰才被否定</strong></td></tr>
+<tr><td>7-7 盘中高点</td><td>876</td><td>短线被拒位</td></tr>
+<tr><td>短期均线支撑</td><td>MA10 770 / MA20 749</td><td>移动止盈参考</td></tr>
+<tr><td>中期均线支撑</td><td>MA50 740 / MA60 728</td><td>趋势生命线</td></tr>
+<tr><td>前低</td><td>638（6/1）</td><td>阶段 2 回调低点</td></tr>
+<tr><td>终极支撑</td><td>491.96（2/5 上市后低）</td><td>第 1 阶段底部</td></tr>
+</table></div>
+
+<h2 id="framework">七、入场 / 止损 / 退出框架（条件式）</h2>
+<p>本节是<strong>方法演示</strong>，不是荐股。它回答的是："<strong>若</strong>一只股票处在沐曦这样的技术结构里（第 2 阶段 + 顶背驰 + 放量滞涨），趋势规则要求你怎么应对？"</p>
+<div class="callout callout-note">
+<span class="callout-title">语言切换：趋势 vs 价值</span>
+沐曦 PB 25 倍、PS 200 倍——<strong>从价值投资语言看它根本不该碰</strong>。但趋势跟随者不在这层语言里思考：他们只问"趋势结构在不在、风险收益比合不合算"。两套规则不混用，是纪律。本文严格走趋势语言。
+</div>
+<h3>若你<strong>不在场</strong>——为什么不追高</h3>
+<ul>
+<li>7-7 已是<strong>顶背驰 + 放量滞涨</strong>信号，盘中 876 追入即承担"上影线拒绝"风险；</li>
+<li>趋势课的突破三要素：<strong>上下文 + 触发 + 确认</strong>。上下文（第 2 阶段）成立，触发（创新高）有了，<strong>但确认（收盘站上阻力 843）没给</strong>——没有确认就不追。</li>
+</ul>
+<h3>若你<strong>已持有</strong>——趋势跟随的退出纪律</h3>
+<ul>
+<li><strong>移动止盈线 = 跌破 MA10（770）或 MA20（749）</strong>，收盘有效跌破才分批减仓，<strong>不一次性清零</strong>（长电科技 5/6 全清踏空 +25.7% 的教训）；</li>
+<li>趋势结构完好（价在 MA50 之上 + 均线上行）就 <em>buy right and sit tight</em>，不因"涨太多"提前下车；</li>
+<li><strong>收盘有效站上 842.97</strong> = 背驰被否定、趋势确认加速 → 继续持有甚至加码；<strong>跌破 MA50（740）</strong> = 第 2 阶段受质疑 → 收紧止盈、保护利润。</li>
+</ul>
+<h3>若你<strong>观察进场</strong>——等两种确认之一</h3>
+<ol>
+<li><strong>背驰修复</strong>：后续交易日收盘有效站上 843（最好放量），顶背驰被否定，可在确认日或其回踩时介入；</li>
+<li><strong>回踩买点</strong>：回踩 MA20（749）/MA50（740）<strong>缩量企稳</strong>后再度放量反弹，是更安全的参与位；</li>
+<li><strong>止损</strong>：进场价下方 −7%，或收盘跌破 MA50（740），取两者更严；</li>
+<li><strong>仓位</strong>：单笔风险 ≤ 2%（2% 法则），<strong>绝不摊平</strong>——第 4 阶段的汾酒逆势加仓教训犹在。</li>
+</ol>
+
+<h2 id="verdict">八、综合研判</h2>
+<div class="table-wrap"><table>
+<tr><th>层面</th><th>信号</th><th>倾向</th></tr>
+<tr><td>趋势层</td><td>第 2 阶段、多头排列、板块逻辑成立</td><td class="up">看多（持有/回踩买的语言）</td></tr>
+<tr><td>动能层</td><td>7-7 MACD 顶背驰 + 放量滞涨</td><td class="warn">警示（非无脑追的位置）</td></tr>
+<tr><td>价值层</td><td>PB 25x / PS 200x+，极贵</td><td class="dn">脱离价值买点（执行不及预期即剧烈回撤）</td></tr>
+</table></div>
+<p>三层叠加的画像：<strong>高弹性、高风险、事件驱动型标的</strong>。7-7 大涨本质是"外生催化（英特尔涨价）打在商业化加速的国产 GPU 龙头"上的资金抢筹。<strong>趋势结构还在，但动能已露疲态</strong>——这是"持有语言"与"警惕语言"必须并用的典型时刻，不是"闭眼追"或"全面看空"的非黑即白。</p>
+<p>关键的观察锚点是 <strong>收盘价能否有效站上 842.97</strong>：站上，则背驰被否定、第 2 阶段加速确认；站不上，则 7-7 就是一个被外生催高、随后回吐的"假突破"。<strong>盘中 876 是试探，收盘 843 才是确认</strong>——把这句话记住，比记住任何预测都值钱。</p>
+
+<h2 id="lessons">九、方法论复盘</h2>
+<ol>
+<li><strong>新股（上市&lt;1年）不能硬套趋势模板</strong>：MA150/200 缺失，5/8 条不可算。降级用 MA20/60 + 周线 MA10/30，并诚实标注"临时判定"。</li>
+<li><strong>"放量"不一定健康</strong>：放量滞涨比缩量顶背驰更隐蔽、更危险——它用成交量的假繁荣掩盖派发。</li>
+<li><strong>背驰是滞后警告，不是反转指令</strong>：背驰出现后趋势仍可能延续（被更强的买力否定），但它明确告诉你<strong>风险收益比恶化</strong>，该收紧止损而非扩大敞口。</li>
+<li><strong>收盘价 &gt; 盘中价</strong>：盘中冲高是"试探"，收盘才是"确认"。沐曦 7-7 盘中 876 vs 收盘 834 vs 历史收盘 843——这个三角关系就是全部判读。</li>
+<li><strong>三层语言不可混用</strong>：趋势层看多 ≠ 价值层便宜 ≠ 该满仓。沐曦趋势可跟随、价值极贵——清楚自己用哪套规则，是这套方法的核心纪律。</li>
+</ol>
+
+<div class="callout callout-tip">
+<span class="callout-title">延伸学习</span>
+本案例用的方法出自一门 7 课时的趋势投资课程（Weinstein 四阶段 → Minervini 趋势模板 → 突破/回踩入场 → 移动止盈 → 2% 仓位法则 → 执行纪律 → 价值/趋势共存）。课程用长电、汾酒、阿里等真实持仓做案例，本篇是同一套方法在一只新股上的再演练。
+</div>
+
+<p class="sources">
+<strong>数据与引用</strong><br>
+· 行情数据：akshare（东方财富接口），日线/周线前复权，截至 2026-07-07 收盘；技术指标（MA/MACD/背驰）由作者计算。<br>
+· 财务数据：沐曦股份 2025 年报、2026 一季报（经新闻公开报道转引，腾讯新闻/新浪财经）。<br>
+· 事件素材：<a href="https://finance.sina.com.cn/jjxw/2026-07-07/doc-inifyvay5150034.shtml" target="_blank" rel="noopener">新浪财经 7-7 沐曦领涨</a> · <a href="https://www.163.com/dy/article/L17P37P90550WHYR.html" target="_blank" rel="noopener">网易/财闻 英特尔涨价</a> · <a href="https://m.sohu.com/a/1046895454_120109837" target="_blank" rel="noopener">搜狐 3500亿龙头</a> · <a href="https://www.tmtpost.com/8051440.html" target="_blank" rel="noopener">钛媒体 国产AI算力</a><br>
+· 方法论原典：Stan Weinstein《笑傲牛熊》；Mark Minervini 趋势模板（SEPA）。<br>
+<em>本文不构成投资建议。</em>
+</p>
+
+</article>
+</body>
+</html>
