@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 440" width="100%" role="img" aria-label="沐曦股份 688802 周线（截至 2026-07-07，前复权）  阶段全景">
 <rect width="1100" height="440" fill="#fffff8"/>
-<text x="54" y="22" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="13" font-weight="700" fill="#1a1a1a">沐曦股份 688802 周线（截至 2026-07-07，前复权）  阶段全景</text>
+<text x="54" y="22" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="13" font-weight="700" fill="#1a1a1a">沐曦股份 688802 周线（截至 2026-07-07，前复权）  阶段全景</text>
 <line x1="54" y1="40.0" x2="1030" y2="40.0" stroke="#e6e0d0" stroke-width="0.6"/>
-<text x="1036" y="43.0" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#666">920</text>
+<text x="1036" y="43.0" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#666">920</text>
 <line x1="54" y1="102.2" x2="1030" y2="102.2" stroke="#e6e0d0" stroke-width="0.6"/>
-<text x="1036" y="105.2" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#666">803</text>
+<text x="1036" y="105.2" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#666">803</text>
 <line x1="54" y1="164.5" x2="1030" y2="164.5" stroke="#e6e0d0" stroke-width="0.6"/>
-<text x="1036" y="167.5" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#666">687</text>
+<text x="1036" y="167.5" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#666">687</text>
 <line x1="54" y1="226.8" x2="1030" y2="226.8" stroke="#e6e0d0" stroke-width="0.6"/>
-<text x="1036" y="229.8" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#666">571</text>
+<text x="1036" y="229.8" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#666">571</text>
 <line x1="54" y1="289.0" x2="1030" y2="289.0" stroke="#e6e0d0" stroke-width="0.6"/>
-<text x="1036" y="292.0" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#666">454</text>
+<text x="1036" y="292.0" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#666">454</text>
 <line x1="54.0" y1="53.3" x2="54.0" y2="184.3" stroke="#c0392b" stroke-width="1"/>
 <rect x="43.6" y="149.2" width="20.9" height="8.3" fill="#c0392b" opacity="0.92"/>
 <rect x="43.6" y="299.0" width="20.9" height="106.0" fill="#888888" opacity="0.45"/>
@@ -99,26 +99,23 @@
 <rect x="1019.6" y="85.9" width="20.9" height="50.9" fill="#c0392b" opacity="0.92"/>
 <rect x="1019.6" y="382.1" width="20.9" height="22.9" fill="#888888" opacity="0.45"/>
 <polyline points="367.7,219.5 402.6,229.3 437.4,235.0 472.3,235.3 507.1,237.3 542.0,238.0 576.9,236.6 611.7,227.9 646.6,216.0 681.4,202.9 716.3,189.6 751.1,179.9 786.0,168.4 820.9,162.9 855.7,156.9 890.6,151.2 925.4,142.8 960.3,142.3 995.1,141.2 1030.0,137.2" fill="none" stroke="#2f6f4f" stroke-width="1.4" />
-<polyline points="" fill="none" stroke="#8b1538" stroke-width="1.4" stroke-dasharray="5,3"/>
-<text x="54.0" y="414" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#666" text-anchor="middle">2025-12-19</text>
-<text x="542.0" y="414" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#666" text-anchor="middle">2026-04-03</text>
-<text x="1030.0" y="414" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#666" text-anchor="middle">2026-07-10</text>
-<text x="4" y="164.5" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#888" transform="rotate(-90 4 164.5)">价格¥</text>
-<text x="4" y="352.0" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="8" fill="#888" transform="rotate(-90 4 352.0)">成交量</text>
+<text x="54.0" y="414" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#666" text-anchor="middle">2025-12-19</text>
+<text x="542.0" y="414" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#666" text-anchor="middle">2026-04-03</text>
+<text x="1030.0" y="414" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#666" text-anchor="middle">2026-07-10</text>
+<text x="4" y="164.5" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#888" transform="rotate(-90 4 164.5)">价格¥</text>
+<text x="4" y="352.0" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="8" fill="#888" transform="rotate(-90 4 352.0)">成交量</text>
 <line x1="58" y1="34" x2="76" y2="34" stroke="#2f6f4f" stroke-width="1.6"/>
-<text x="80" y="37" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#555">10周均线</text>
-<line x1="178" y1="34" x2="196" y2="34" stroke="#8b1538" stroke-width="1.6"/>
-<text x="200" y="37" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="9" fill="#555">30周均线(部分N/A)</text>
+<text x="80" y="37" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="9" fill="#555">10周均线</text>
 <circle cx="1030.0" cy="63.5" r="4.5" fill="none" stroke="#8b1538" stroke-width="1.6"/>
-<text x="1030.0" y="51.5" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="10" fill="#8b1538" text-anchor="middle" font-weight="700">IPO 895</text>
+<text x="1030.0" y="51.5" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="10" fill="#8b1538" text-anchor="middle" font-weight="700">IPO 895</text>
 <circle cx="263.1" cy="234.0" r="4.5" fill="none" stroke="#2f6f4f" stroke-width="1.6"/>
-<text x="263.1" y="222.0" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="10" fill="#2f6f4f" text-anchor="middle" font-weight="700">底 492</text>
+<text x="263.1" y="222.0" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="10" fill="#2f6f4f" text-anchor="middle" font-weight="700">底 492</text>
 <circle cx="472.3" cy="222.2" r="4.5" fill="none" stroke="#6a4c93" stroke-width="1.6"/>
-<text x="472.3" y="210.2" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="10" fill="#6a4c93" text-anchor="middle" font-weight="700">突破</text>
+<text x="472.3" y="210.2" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="10" fill="#6a4c93" text-anchor="middle" font-weight="700">突破</text>
 <circle cx="681.4" cy="116.4" r="4.5" fill="none" stroke="#8b1538" stroke-width="1.6"/>
-<text x="681.4" y="104.4" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="10" fill="#8b1538" text-anchor="middle" font-weight="700">阶段顶 843</text>
+<text x="681.4" y="104.4" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="10" fill="#8b1538" text-anchor="middle" font-weight="700">阶段顶 843</text>
 <circle cx="820.9" cy="175.2" r="4.5" fill="none" stroke="#2f6f4f" stroke-width="1.6"/>
-<text x="820.9" y="163.2" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="10" fill="#2f6f4f" text-anchor="middle" font-weight="700">回调 638</text>
+<text x="820.9" y="163.2" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="10" fill="#2f6f4f" text-anchor="middle" font-weight="700">回调 638</text>
 <circle cx="995.1" cy="79.5" r="4.5" fill="none" stroke="#c0392b" stroke-width="1.6"/>
-<text x="995.1" y="67.5" font-family="Georgia, "Songti SC", "Noto Serif CJK SC", serif" font-size="10" fill="#c0392b" text-anchor="middle" font-weight="700">7-7 冲876</text>
+<text x="995.1" y="67.5" font-family="Georgia, 'Songti SC', 'Noto Serif CJK SC', serif" font-size="10" fill="#c0392b" text-anchor="middle" font-weight="700">7-7 冲876</text>
 </svg>
