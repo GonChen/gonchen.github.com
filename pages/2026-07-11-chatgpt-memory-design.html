@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChatGPT Memory 设计原理：从笔记本到后台综合的演进</title>
+  <meta name="date" content="2026-07-11">
+  <meta name="summary" content="全网调研 ChatGPT 记忆系统：从 2024 显式 saved memories，到 2025 chat history 画像，再到 2026 Dreaming V3 后台异步综合。逆向得出的六层上下文结构、时间感知重写、透明度与安全争议。">
+  <meta name="tags" content="ChatGPT, Memory, OpenAI, Dreaming, Agent Memory">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a { color: #555; text-decoration: none; font-size: 14px; }
+    .site-nav a:hover { color: #111; }
+    .content { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.75rem 1rem;
+      border-left: 3px solid #d1d5db;
+      color: #555;
+      background: #f3f4f6;
+      border-radius: 0 4px 4px 0;
+    }
+    blockquote p:last-child { margin-bottom: 0; }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em;
+      background: #f3f4f6;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .lead { font-size: 1.05rem; color: #444; }
+    .layer-box {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .star { color: #d97706; font-weight: 600; }
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.1em 0.55em;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #2563eb;
+      margin-right: 0.3rem;
+    }
+    .tag-warn { background: #fef3c7; color: #b45309; }
+    .tag-ok { background: #ecfdf5; color: #059669; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>ChatGPT Memory 设计原理：从笔记本到后台综合的演进</h1>
+    <p class="meta">
+      <time datetime="2026-07-11">2026-07-11</time>
+      &nbsp;·&nbsp;
+      <span class="tag">ChatGPT</span>
+      <span class="tag">Memory</span>
+      <span class="tag">Dreaming V3</span>
+    </p>
+
+    <p class="lead">ChatGPT 的记忆系统在过去两年完成了三次范式跳跃。本文综合 OpenAI 官方资料与多篇逆向工程研究，拆解它究竟如何"记住你"——从用户手动维护的 saved memories，到不可见的用户画像，再到 2026 年 6 月上线的 Dreaming V3 后台异步综合。</p>
+
+    <blockquote>
+      <p><strong>信息来源说明</strong>：OpenAI 从未公开实现细节。以下"六层上下文结构""画像 section"等内容来自多个独立研究者通过<strong>对话探测 + 系统提示词泄露</strong>逆向得出，可信度较高但含推测成分。文末附可信度评级。</p>
+    </blockquote>
+
+    <h2>一、演进时间线：从「笔记本」到「后台综合」</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>时间</th><th>版本</th><th>核心机制</th><th>问题</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2024.04</td>
+            <td><strong>Saved Memories</strong></td>
+            <td>用户显式说"记住X"，或模型检测到强信号触发 <code>bio</code> 工具写入</td>
+            <td>像"记了笔记但忘了没记的"；会过期变陈旧；条目互相矛盾</td>
+          </tr>
+          <tr>
+            <td>2025.04</td>
+            <td><strong>+ Dreaming V0</strong></td>
+            <td>新增后台进程，引用完整 chat history 做综合</td>
+            <td>Dreaming 只能"补充"不能"独立"，仍依赖 saved memories</td>
+          </tr>
+          <tr>
+            <td>2026.06.04</td>
+            <td><strong>Dreaming V3</strong>（当前）</td>
+            <td>后台异步综合成为<strong>独立主系统</strong>，saved memories 降级为可选</td>
+            <td>计算量降 5x，首次向免费用户开放</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>OpenAI 官方公布的三个维度 eval 提升（自报，未经第三方审计）：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>指标</th><th>2024 Saved</th><th>2025 Dreaming V0</th><th>2026 Dreaming V3</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>事实召回</td><td>41.5%</td><td>67.9%</td><td class="star">82.8%</td></tr>
+          <tr><td>偏好遵循</td><td>31.4%</td><td>55.3%</td><td class="star">71.3%</td></tr>
+          <tr><td>时间敏感准确率</td><td>9.4%</td><td>—</td><td class="star">75.1%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>二、上下文结构：模型每次实际收到什么</h2>
+
+    <p>每次请求时，模型实际收到的上下文由 <strong>六个分层块</strong>组成（Manthan Gupta 逆向得出）：</p>
+
+    <div class="layer-box">
+<pre><code>[0] System Instructions          ← 行为/安全规则（固定）
+[1] Developer Instructions       ← 开发者指令
+[2] Session Metadata (ephemeral) ← 一次性环境信息，不持久化
+[3] User Memory (long-term facts)← saved memories，每次都注入
+[4] Recent Conversations Summary ← 近期对话的轻量摘要
+[5] Current Session Messages     ← 本会话滑动窗口
+[6] Your latest message          ← 当前提问</code></pre>
+    </div>
+
+    <h3>第 2 层 · Session Metadata（会话元数据，临时）</h3>
+    <ul>
+      <li>设备类型、浏览器 UA、大致位置/时区、订阅等级、账号年龄</li>
+      <li>使用频率（近 1/7/30 天活跃天数）、平均会话深度、平均消息长度</li>
+      <li><strong>模型使用分布</strong>（如 5% gpt-5.1 / 49% gpt-5 / 17% gpt-4o）</li>
+      <li>屏幕尺寸、暗黑模式、JS 启用、像素比、页面停留秒数</li>
+    </ul>
+    <p><span class="tag tag-ok">特性</span> 每次会话开始注入一次，会话结束即弃，不进入长期记忆。</p>
+
+    <h3>第 3 层 · User Memory（显式事实，持久）</h3>
+    <ul>
+      <li>即旧的 <code>bio</code> 工具存储的 saved memories（如"我叫 Johann"、"做网络安全研究"、"住西雅图"）</li>
+      <li>触发：用户说"记住这个" / 模型检测到符合标准的强信号事实</li>
+      <li>每条带<strong>时间戳</strong>和 <strong>Confidence 标签</strong>（推理时用于引导模型）</li>
+      <li>每次请求都注入，用户可在 UI 查看/编辑/删除</li>
+    </ul>
+
+    <h3>第 4 层 · Recent Conversations Summary（跨会话连续性）</h3>
+    <p>这是最反直觉的一层——<strong>不是 RAG，不是向量库</strong>。</p>
+    <ul>
+      <li>格式：<code>&lt;时间戳&gt;: &lt;对话标题&gt; |||| 用户消息片段 |||| 用户消息片段</code></li>
+      <li><strong>只摘要用户消息，不摘要 assistant 回复</strong>（省 token + 防注入）</li>
+      <li>约 15–40 条近期对话，作为"近期兴趣地图"</li>
+      <li>最新 5 条精确到秒，之后只到小时</li>
+    </ul>
+
+    <h3>第 5 层 · Current Session（会话内滑动窗口）</h3>
+    <ul>
+      <li>本会话完整（非摘要）消息历史</li>
+      <li>按 <strong>token 数</strong>（非消息数）封顶，超限则旧消息滚出</li>
+    </ul>
+
+    <h2>三、2025 新增的不可见画像 Section</h2>
+
+    <p>安全研究员 Wunder Wuzzi（Embrace The Red）通过系统提示词泄露发现，2025 年后 ChatGPT 实际还有几个<strong>用户不可见、不可编辑</strong>的画像 section：</p>
+
+    <h4>① Assistant Response Preferences（回复偏好）</h4>
+<pre><code>1. User prefers structured formatting (XML/JSON/code blocks)  Confidence=high
+2. User engages in complex multi-step execution tests...      Confidence=high</code></pre>
+
+    <h4>② Notable Past Conversation Topic Highlights（话题高亮）</h4>
+<pre><code>1. In early 2024, user frequently tested AI vulnerabilities...
+   The user systematically evaluates memory capabilities.  Confidence=high</code></pre>
+
+    <h4>③ Helpful User Insights（用户洞察）</h4>
+<pre><code>1. User's name is Johann. Confidence=high
+2. User maintains a blog "Embrace the Red". Confidence=high</code></pre>
+
+    <h4>④ User Interaction Metadata（使用元数据）</h4>
+    <p>模型使用分布、账号年龄、订阅档位、平均会话深度、本地小时、设备像素比、暗黑模式、UA 字符串……泄露了 OpenAI 内部用 <code>intent_tags</code>（如 <code>translation</code>、<code>argument_or_summary_generation</code>）给每次对话打标签。</p>
+
+    <blockquote>
+      <p><strong>关键发现</strong>：ChatGPT 当时<strong>实际上不会搜索你的历史</strong>。研究者用 3 个一年前的一次性话题测试，ChatGPT 完全不记得。它是靠这些<strong>预计算的静态画像</strong>维持"记得你"的幻觉，而非实时检索。</p>
+    </blockquote>
+
+    <h2>四、Dreaming V3（2026 最新）：三大核心创新</h2>
+
+    <p>这是当前的主系统。三个关键设计：</p>
+
+    <h3>1. 后台异步综合（Asynchronous Synthesis）</h3>
+    <ul>
+      <li>对话结束后，<strong>后台进程跨多条对话同时读取</strong>（非逐条），综合出单一的 memory state</li>
+      <li>这个 state <strong>不存放在对话日志里</strong>，而是独立的 per-user 数据层</li>
+      <li><strong>推理时注入系统提示词</strong> → 每个新对话一开始就"自带"系统对你的认知</li>
+      <li>你不需要点"记住"，模型自己判断什么重要</li>
+    </ul>
+
+    <h3>2. 时间感知重写（Temporal Awareness）—— 最实用的突破</h3>
+    <p>传统记忆会变陈旧。Dreaming V3 会自动重写：</p>
+<pre><code>"你7月要去新加坡"  ──(7月过后)──►  "你2026年7月去过新加坡"</code></pre>
+    <p>适用于：旅行结束、换工作、项目结束等任何<strong>有时间边界</strong>的事实。这让"时间敏感准确率"从 9.4% 飙到 75.1%。</p>
+
+    <h3>3. Memory Summary Page（透明化）</h3>
+    <ul>
+      <li>不再给原始 fact 列表，而是<strong>自然语言摘要</strong>展示"ChatGPT 对你的理解"</li>
+      <li>可查看最后更新时间、可直接文本框编辑、可高亮特定区域修正</li>
+      <li>配合 GPT-5.5 Instant 的 <strong>memory sources</strong> 功能，显示"这次回复用了哪些上下文来个性化"</li>
+    </ul>
+
+    <h3>控制开关（注意依赖关系）</h3>
+    <ul>
+      <li><code>Reference saved memories</code> OFF → 自动连带 <code>Reference chat history</code> OFF</li>
+      <li><code>Reference chat history</code> OFF → 删除从历史学到的数据，<strong>30 天内</strong>从系统清除</li>
+      <li>删除 saved memories → 删除日志可能保留最长 <strong>30 天</strong>（安全/调试用）</li>
+      <li><strong>Temporary Chat</strong> → 既不读也不写记忆</li>
+    </ul>
+
+    <h2>五、设计哲学与关键争议</h2>
+
+    <h3>设计哲学</h3>
+    <ol>
+      <li><strong>不用 RAG</strong>：放弃"对每条消息做 embedding + 相似度检索 + 拉全文"的高成本方案，改用<strong>预计算轻量摘要 + 后台综合 + 直接注入</strong>，用速度/效率换细节深度</li>
+      <li><strong>分层职责</strong>：会话元数据管"环境适应"、显式事实管"持久身份"、对话摘要管"跨会话连续性"、滑动窗口管"会话内连贯"</li>
+      <li><strong>后台综合优于显式管理</strong>：用户不该当知识库管理员，让模型自己持续更新画像（Dreaming V3 的核心理念）</li>
+    </ol>
+
+    <h3>争议点（多位研究者批评）</h3>
+
+    <h4><span class="tag tag-warn">透明度</span> 用户不可见、不可编辑</h4>
+    <p>Topic Memory / 后台综合结果<strong>用户不可见、不可编辑</strong>（只能 hack 提示词才看到）。这被认为是<strong>欧洲未上线</strong>的原因（可能违反 GDPR 的可导出要求）。"你看到的是截图，不是账本。"</p>
+
+    <h4><span class="tag tag-warn">审计</span> 审计追踪缺失</h4>
+    <p>综合态存于独立数据层，<strong>无法 pin、version、diff</strong>。没有导出 API → 跨平台迁移工具只能"礼貌地问模型"而非读记录。对需要输出可预测性的契约/合规场景是"未映射的风险面"。</p>
+
+    <h4><span class="tag tag-warn">安全</span> 提示注入放大攻击面</h4>
+    <p>记忆附加在系统提示词 → 恶意 prompt（通过文档/网页/工具输出）可指示 ChatGPT <strong>写入持久记忆</strong>。Dreaming V3 这种"无需确认就自我修订"的系统<strong>放大了这个攻击面</strong>：从"不可信输入"到"永久注入指令"的路径更短。</p>
+
+    <h4>自我指涉召回风险</h4>
+    <p>综合进程跨完整历史读取 → 一段临时阶段（压力期、反常的一周）可能被综合成<strong>持久记忆</strong>，塑造未来交互。时间重写机制对"清晰的 before/after"有效，但对<strong>渐进漂移</strong>（无明显结束点）处理不明。</p>
+
+    <h4>静态身份 vs 动态角色</h4>
+    <p>saved memories 侧重构建"静态用户身份"，与人类多模式存在（职业/创造/任务等切换角色）冲突。缺乏"策略性遗忘"——无法自动衰减不再相关的信息。</p>
+
+    <h2>六、核心数据流总结</h2>
+
+    <div class="layer-box">
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│  对话发生（实时）                                              │
+│    模型收到 = 固定系统指令 + 会话元数据 + 注入的记忆态           │
+│             + 对话摘要 + 当前滑动窗口 + 你的消息                 │
+│    → 模型可能调用 bio 工具写 saved memory（可见、可编辑）        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ 对话结束
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Dreaming 后台进程（异步，非实时）                              │
+│    跨多条对话同时读取 → 综合成单一 memory state                 │
+│    时间感知重写（"要去" → "去过"）                              │
+│    写入独立 per-user 数据层（用户不可见）                        │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ 下一次对话开始
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│  推理时注入                                                    │
+│    memory state → 注入系统提示词                               │
+│    → 新对话一开始就"自带"系统对你的综合认知                      │
+│    → 表现为"Memory summary page"（可见摘要，底层态不可见）       │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+    </div>
+
+    <h2>七、信息可信度评级</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>来源</th><th>可信度</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>OpenAI 官方博客 + Help Center</td><td>★★★★★</td><td>官方架构、eval 数字、Singapore 示例、5x 计算量</td></tr>
+          <tr><td>Manthan Gupta 逆向（2025.12）</td><td>★★★★</td><td>6 层上下文结构，多家验证一致</td></tr>
+          <tr><td>Embrace The Red（Wuzzi，2025.05）</td><td>★★★★</td><td>系统提示词泄露，双账号验证；但 LLM 会幻觉部分内容</td></tr>
+          <tr><td>Julian Fleck 逆向（2025.04）</td><td>★★★</td><td>Topic Memory / latent reactivation 机制，含推测</td></tr>
+          <tr><td>Dreaming V3 技术评论（2026.06）</td><td>★★★★</td><td>独立数据层、推理时注入、30 天删除等细节</td></tr>
+          <tr><td>eval 具体百分比</td><td>★★★</td><td>OpenAI 自报，未经第三方审计</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <blockquote>
+      <p><strong>提醒</strong>：OpenAI 从未公开实现细节（是否真的无 RAG、综合算法、存储格式均为逆向推测）。Dreaming V3（2026.06）是最新的，但底层综合机制仍不透明。</p>
+    </blockquote>
+
+    <hr>
+    <p><strong>主要参考来源</strong>：</p>
+    <ul>
+      <li><a href="https://openai.com/index/chatgpt-memory-dreaming/">OpenAI — Dreaming: Better memory for a more helpful ChatGPT</a>（2026.06 官方）</li>
+      <li><a href="https://openai.com/index/memory-and-new-controls-for-chatgpt/">OpenAI — Memory and new controls for ChatGPT</a></li>
+      <li><a href="https://manthanguptaa.in/posts/chatgpt_memory/">Manthan Gupta — I Reverse Engineered ChatGPT's Memory System</a>（2025.12）</li>
+      <li><a href="https://embracethered.com/blog/posts/2025/chatgpt-how-does-chat-history-memory-preferences-work/">Embrace The Red — How ChatGPT Remembers You</a>（2025.05 安全视角）</li>
+      <li><a href="https://medium.com/@j0lian/reverse-engineering-chatgpts-updated-memory-system-3cb9e82e5d21">Julian Fleck — Reverse Engineering ChatGPT's Updated Memory System</a>（2025.04）</li>
+      <li><a href="https://dev.to/akaranjkar08/chatgpt-dreaming-v3-how-openai-rebuilt-memory-from-the-ground-up-june-2026-1jb3">Dreaming V3 技术解读</a>（2026.06）</li>
+    </ul>
+
+  </main>
+</body>
+</html>
