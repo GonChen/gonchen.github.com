@@ -1,0 +1,25 @@
+pages/2026-07-16-self-host-paseo-relay.html
+  605af29e539b814f 1-315
+index.html
+  605af29e539b814f 91-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "3.0.5",
+  "base_commit_sha": "57507860c533f51cfbfb30fd7d24c0003138ff5a",
+  "prompts": {
+    "605af29e539b814f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "019f687d-d2c6-77b7-bcc1-fd604ab2e5d8",
+        "model": "glm-5.2"
+      },
+      "human_author": "gong_chen@qq.com",
+      "messages": [],
+      "total_additions": 321,
+      "total_deletions": 0,
+      "accepted_lines": 320,
+      "overriden_lines": 0
+    }
+  }
+}
