@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自建 Paseo Relay：让手机连上内网 AI Agent 的两次踩坑</title>
+  <meta name="date" content="2026-07-16">
+  <meta name="summary" content="NAT 后的 Paseo daemon 如何被外网手机访问——自建 relay 的中继架构、零知识转发的设计动机，以及自建 relay 默认不开 TLS 导致 400 的源码级根因排查。">
+  <meta name="tags" content="Paseo, Relay, WebSocket, TLS, NAT, SSH">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a { color: #555; text-decoration: none; font-size: 14px; }
+    .site-nav a:hover { color: #111; }
+    .content { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    img { max-width: 100%; height: auto; display: block; margin: 1rem auto; border-radius: 4px; }
+    blockquote {
+      margin: 1rem 0; padding: 0.5rem 1rem; border-left: 3px solid #d1d5db;
+      color: #555; background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em; background: #f3f4f6; padding: 0.15em 0.4em; border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px;
+      font-size: 0.85rem; line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .warn { border-left-color: #f59e0b; background: #fffbeb; color: #78350f; }
+    pre.ascii { font-size: 0.78rem; line-height: 1.35; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav"><a href="/">&larr; CoolGPU</a></nav>
+  <main class="content">
+    <h1>自建 Paseo Relay：让手机连上内网 AI Agent 的两次踩坑</h1>
+    <p class="meta"><time datetime="2026-07-16">2026-07-16</time></p>
+
+    <p><a href="https://github.com/getpaseo/paseo">Paseo</a> 是一个在本机跑 daemon、用手机 / 桌面 / CLI 作为 client 去控制 AI coding agent 的工具。它的核心架构是 <strong>daemon 负责生命周期与状态，所有 client（含手机）只是 WebSocket 客户端</strong>。daemon 默认监听 <code>127.0.0.1:6767</code>——这在本地很安全，但带来一个直接问题：<strong>当我在外面用手机想连家里的 daemon 时，连不上。</strong></p>
+
+    <p>官方提供了一个托管 relay 来解决这个问题，但很多人（包括我）更愿意自建。本文记录自建 relay 的完整过程，以及其中两个非显而易见的坑——第二个坑的根因要翻到源码里才看得清。</p>
+
+    <h2>一、先理解架构：为什么是 relay，而不是"直接连"</h2>
+
+    <p>手机要连 daemon，直觉方案是"给 daemon 开个公网入口"。但这在现实中几乎都走不通：</p>
+
+    <ul>
+      <li><strong>端口转发</strong>：需要公网 IP + 路由器控制权，家用宽带大多是大内网 NAT，没有公网 IP。</li>
+      <li><strong>把 daemon 直接暴露公网</strong>：daemon 跑着你的 agent、能执行命令、能读文件，把它裸暴露在公网上是不可接受的风险面。</li>
+      <li><strong>反向代理</strong>：HTTP 反代管不到 WebSocket 的双向长连接语义，而且还是绕不开"daemon 在 NAT 后无法被主动连"这个根本约束。</li>
+    </ul>
+
+    <p>根本约束只有一句话：<strong>NAT 后的设备无法被外部主动发起连接，只能维持它自己主动发起的连接。</strong> 所以正确方向是让 daemon 主动"拨出去"，再让手机也"拨出去"，两边在一个公网中转点会合。这个中转点就是 relay。</p>
+
+    <h3>relay 的工作原理</h3>
+
+    <pre class="ascii"><code>手机 App ──────────────────────┐
+                                 ▼
+                          [ paseo-relay ]
+                                 ▲
+本机 daemon ──────────────────────┘
+        (两者都主动出站拨 relay)</code></pre>
+
+    <p>relay 有三个 WebSocket 角色（见 <a href="https://github.com/zenghongtu/paseo-relay">paseo-relay</a> 的协议说明）：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>角色</th><th>query 参数</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>daemon control</td><td><code>role=server&amp;v=2</code></td><td>每 daemon 一条，接收 connect/disconnect 事件</td></tr>
+          <tr><td>daemon data</td><td><code>role=server&amp;connectionId=&lt;c&gt;</code></td><td>每条 client 连接一条，转发加密帧</td></tr>
+          <tr><td>client</td><td><code>role=client[&amp;connectionId=&lt;c&gt;]</code></td><td>手机侧 socket</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>为什么 relay 不需要认证，却仍然是安全的</h3>
+
+    <p>这是整个设计里最精妙的一点。relay <strong>没有任何鉴权</strong>——任何人都能连。但 daemon 和手机之间的流量是 <strong>E2E 端到端加密</strong>的（XSalsa20-Poly1305 / NaCl box），密钥由两端在配对时用 ECDH 协商。relay 能看到的只有 IP、时间、包大小、session ID，<strong>永远看不到内容，也无法伪造消息</strong>。</p>
+
+    <p>这叫 <em>零知识中继</em>（zero-knowledge relay）。它的安全模型把 relay 定位成"完全不可信的哑管道"——你可以把它部署在任何 VPS 上，哪怕这台机器被入侵，也不会泄露你的 agent 数据。这是一个很好的设计示范：<strong>把信任边界从"传输节点"收缩到"通信两端"</strong>，中间链路无论怎么腐化都不影响机密性。</p>
+
+    <h2>二、部署 relay：nginx 做 TLS 前置</h2>
+
+    <p>relay 本身监听 <code>127.0.0.1:8411</code>，不直接暴露。前面挂一层 nginx 在 443 做 TLS 终结 + WebSocket 反代。为什么一定要 TLS？README 写得很直白：</p>
+
+    <blockquote>Always terminate TLS upstream; do not expose the relay over plain HTTP.</blockquote>
+
+    <p>明文 <code>ws://</code> 会让中间设备（运营商、防火墙、DPI）看到完整的 WebSocket 流量特征，TLS 是基本卫生。典型部署：</p>
+
+    <pre><code># relay 进程：只听本地
+paseo-relay --addr 127.0.0.1:8411
+
+# nginx：443 TLS + WebSocket 反代到 8411
+server {
+    listen 443 ssl http2;
+    server_name relay.example.com;
+    ssl_certificate     /path/to/fullchain.pem;
+    ssl_certificate_key /path/to/privkey.pem;
+
+    location /ws {
+        proxy_pass http://127.0.0.1:8411;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400s;   # WebSocket 长连接，别让 nginx 主动断
+    }
+}</code></pre>
+
+    <p>部署完先自测：<code>curl https://relay.example.com/health</code> 应返回 <code>{"status":"ok","version":"..."}</code>。</p>
+
+    <h2>三、接入 daemon：第一个坑只是热身</h2>
+
+    <p>daemon 侧的配置在 <code>~/.paseo/config.json</code>。照 README 抄一份：</p>
+
+    <pre><code>{
+  "daemon": {
+    "relay": {
+      "enabled": true,
+      "endpoint": "relay.example.com:443",
+      "publicEndpoint": "relay.example.com:443"
+    }
+  }
+}</code></pre>
+
+    <p>重启 daemon（<code>paseo daemon stop &amp;&amp; paseo daemon start</code>）。如果你运气好，到这里就通了。我没有——日志开始持续刷这个：</p>
+
+    <h2>四、第二个坑（核心）：自建 relay 默认不开 TLS</h2>
+
+    <pre><code>{"level":40,"module":"relay-transport",
+ "err":{"message":"Unexpected server response: 400"},
+ "url":"ws://relay.example.com:443/ws?serverId=srv_XX&amp;role=server&amp;v=2",
+ "msg":"relay_error"}</code></pre>
+
+    <p>注意 URL 里的协议：<strong><code>ws://</code></strong>，明文。可我连的是 443——那是 nginx 的 TLS 端口。daemon 用明文 WebSocket 去敲一个 TLS 端口，nginx 在 TLS 握手阶段就拒绝了，返回 <code>400 Bad Request</code>。</p>
+
+    <p>奇怪的地方在于：我配置里写的是 <code>relay.example.com:443</code>，443 这个端口按常识就该走 TLS，daemon 为什么不自动用 <code>wss://</code>？</p>
+
+    <h2>五、根因：翻进 resolveRelayConfig 才看清默认值逻辑</h2>
+
+    <p>顺着 <code>relay-transport</code> 这个 module 名去翻 <code>@getpaseo/server</code> 的代码，定位到 <code>resolveRelayConfig</code>。TLS 的判定逻辑是：</p>
+
+    <pre><code>function resolveRelayConfig(input) {
+    const endpoint = input.env.PASEO_RELAY_ENDPOINT
+        ?? input.persisted.daemon?.relay?.endpoint
+        ?? DEFAULT_RELAY_ENDPOINT;
+
+    const useTls = input.cliRelayUseTls
+        ?? resolveTlsFromEnv(
+               input.env.PASEO_RELAY_USE_TLS,
+               input.persisted.daemon?.relay?.useTls,
+               endpoint === DEFAULT_RELAY_ENDPOINT   // ← 关键
+           );
+    ...
+}</code></pre>
+
+    <p>最后一行是全部真相：<strong>默认只有当 <code>endpoint === DEFAULT_RELAY_ENDPOINT</code>（即官方托管 relay）时，<code>useTls</code> 才为 <code>true</code>。</strong> 自建 relay 的 endpoint 不等于官方默认值，于是 <code>useTls</code> 默认 <code>false</code> → 走 <code>ws://</code> → 撞 443 → 400。</p>
+
+    <p>这其实是个<strong>合理的设计选择</strong>，只是对"自建 relay + nginx TLS"这种最常见部署不友好：</p>
+
+    <ul>
+      <li>官方 relay 的域名是已知的、确定走 TLS，自动开 <code>wss://</code> 没问题。</li>
+      <li>自建 relay 有两种合法用法：直接拿 <code>paseo-relay</code> 监听一个端口跑明文 <code>ws://</code>（内网/测试场景），或者前面挂 nginx 跑 <code>wss://</code>。daemon 无法从 <code>host:port</code> 推断你属于哪一种，<strong>不臆断、默认走明文</strong>是更保守的默认值。</li>
+      <li>但 README 的示例配置恰好没体现这个开关，照抄就会踩。</li>
+    </ul>
+
+    <h3>修复：显式打开 TLS</h3>
+
+    <p>config 的 relay schema（zod，strict）允许的字段是 <code>enabled / endpoint / publicEndpoint / useTls / publicUseTls</code>。补两个字段：</p>
+
+    <pre><code>{
+  "daemon": {
+    "relay": {
+      "enabled": true,
+      "endpoint": "relay.example.com:443",
+      "publicEndpoint": "relay.example.com:443",
+      "useTls": true,          // daemon → relay 走 wss://
+      "publicUseTls": true     // 手机配对 offer 也带 useTls，手机 → relay 走 wss://
+    }
+  }
+}</code></pre>
+
+    <p>两个字段分工不同，缺一不可：</p>
+
+    <ul>
+      <li><code>useTls</code>：daemon 自己出站拨 relay（<code>role=server</code>）时用的协议。</li>
+      <li><code>publicUseTls</code>：daemon 生成给手机的 <strong>pairing offer</strong> 里写入的值，决定手机拨 relay 时用什么协议。只设 <code>useTls</code> 不设 <code>publicUseTls</code>，daemon 连上了但手机还会用 <code>ws://</code> 失败。</li>
+    </ul>
+
+    <p>完整的取值优先级链（高 → 低）：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>来源</th><th>enabled</th><th>endpoint</th><th>useTls</th></tr></thead>
+        <tbody>
+          <tr><td>CLI flag</td><td><code>--no-relay</code></td><td>—</td><td><code>--relay-use-tls</code></td></tr>
+          <tr><td>环境变量</td><td><code>PASEO_RELAY_ENABLED</code></td><td><code>PASEO_RELAY_ENDPOINT</code></td><td><code>PASEO_RELAY_USE_TLS</code></td></tr>
+          <tr><td>config.json</td><td><code>relay.enabled</code></td><td><code>relay.endpoint</code></td><td><code>relay.useTls</code></td></tr>
+          <tr><td>默认</td><td><code>true</code></td><td>官方 relay</td><td>仅官方 relay 为 true</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <blockquote class="warn"><strong>结论：</strong>自建 relay 只要前面挂了 TLS（nginx/Caddy/Cloudflare），就必须显式设 <code>useTls: true</code> 和 <code>publicUseTls: true</code>。这是 README 没写、但照抄必踩的一条。</blockquote>
+
+    <h2>六、验证与配对</h2>
+
+    <p>改完重启 daemon，做双向验证：</p>
+
+    <pre><code># 1) 本机 daemon 日志：应出现 info 级 relay_control_connected，且无 400
+grep relay_ ~/.paseo/daemon.log | tail
+
+# 2) relay 服务器侧：应出现 server-control connected，serverId 与本机 daemon 一致
+journalctl -u paseo-relay -n 5 --no-pager</code></pre>
+
+    <p>两边对上之后，生成本机配对码：</p>
+
+    <pre><code>paseo daemon pair   # 打印二维码 + pairing link</code></pre>
+
+    <p>解码那个 offer，能看到 relay 段已经带上了正确的 TLS 标志：</p>
+
+    <pre><code>{
+  "v": 2,
+  "serverId": "srv_XX",
+  "daemonPublicKeyB64": "...",      // ECDH 公钥，配对用
+  "relay": {
+    "endpoint": "relay.example.com:443",
+    "useTls": true                  // ← publicUseTls 生效，手机也会走 wss
+  }
+}</code></pre>
+
+    <p>手机 App 扫码，走 ECDH 完成端到端密钥协商，之后所有流量经 relay 零知识转发。daemon 一直在 NAT 后面，从未被主动连过——这正是这套架构能工作的原因。</p>
+
+    <hr>
+
+    <h2>附录：relay 服务器的 SSH 管理通道被 DPI 拦了怎么办</h2>
+
+    <p>整个过程里还有个前置插曲：我要 SSH 到 relay 服务器做部署，却发现<strong>端口 TCP 是通的，但 SSH 握手起不来</strong>——典型的 DPI（深度包检测）按协议特征拦截。</p>
+
+    <p>诊断只需一步，看服务端回不回 SSH banner：</p>
+
+    <pre><code># 端口通
+nc -zv relay.example.com 2222   # succeeded
+
+# 但抓不到 SSH banner → 中间设备在 TCP 建立后 reset 了会话
+echo "" | nc -w3 relay.example.com 2222 | head    # 空</code></pre>
+
+    <p>解法是 <strong>SSH ProxyJump</strong>：找一台能直达目标的跳板机，让 SSH 经跳板转发。本质是把"被 DPI 盯着的那一跳"藏进跳板的 SSH 加密隧道里——本地出去的只有到跳板的 SSH 流量，DPI 看不到目标地址，也看不到被拦端口的任何握手特征。</p>
+
+    <pre><code># ~/.ssh/config
+Host relay-jump
+    HostName 198.51.100.10          # 一台可达的跳板机
+    Port 1022
+    User deploy
+
+Host my-relay
+    HostName relay.example.com      # 真正的目标
+    Port 2222
+    User root
+    ProxyJump relay-jump            # 经跳板的 direct-tcpip 转发</code></pre>
+
+    <p>之后 <code>ssh my-relay</code> 一条命令直达，<code>scp</code> / <code>rsync</code> / <code>git over ssh</code> 全部透明走链路，下游工具不用改任何东西。这比手写 <code>ssh -L</code> 端口转发干净得多——ProxyJump 是为"跳板 → 目标"这种两跳拓扑而生，对上层完全透明。</p>
+
+    <h2>小结</h2>
+
+    <ul>
+      <li><strong>架构本质</strong>：NAT 穿透只能靠 daemon 主动出站，relay 是会合点；安全靠端到端加密，relay 零知识、不可信。</li>
+      <li><strong>部署要点</strong>：relay 听本地，nginx 前置 TLS，明文 ws 不准上公网。</li>
+      <li><strong>最大的坑</strong>：自建 relay 默认 <code>useTls=false</code>（源码里只对官方 relay 自动开 TLS），照 README 抄会 <code>ws://</code> 撞 443 报 400。解法是 config 里显式 <code>useTls: true</code> + <code>publicUseTls: true</code>。</li>
+      <li><strong>旁支</strong>：SSH 被 DPI 拦，ProxyJump 是最干净的绕过。</li>
+    </ul>
+
+    <p>把这些写进部署文档时记得把 <code>useTls</code> 那两条标成"必填"——下一个照文档配的人（包括三个月后的自己）会感谢这个标注。</p>
+
+  </main>
+</body>
+</html>
