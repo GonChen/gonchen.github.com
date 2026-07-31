@@ -89,8 +89,8 @@
 
     <article class="page-entry">
       <time datetime="2026-07-31">2026-07-31</time>
-      <h2><a href="/pages/2026-07-31-pi-lesson-command.html">给 AI 编程助手装一个「经验本」：pi /lesson 命令实战</a></h2>
-      <p class="summary">用 pi 的扩展机制写一个 /lesson 斜杠命令：一句标题即可在 ~/.pi/agent/lesson/ 生成带骨架的经验文件，并自动把索引行维护进每次会话自动加载的 AGENTS.md——让排查经验从「聊完就蒸发」变成「随用随取、索引永不过期」。含 registerCommand、ctx.ui 交互、索引置顶去重的完整实现。</p>
+      <h2><a href="/pages/2026-07-31-pi-lesson-command.html">给 AI 编程助手装一个「经验本」：从扩展到 Skill 的进化</a></h2>
+      <p class="summary">用 pi 把“排查经验”自动沉淀成可复用手册。第一版做成扩展插件，弹框问标题/摘要、只生成空模板；意识到提取与总结本就该 agent 干，于是砍掉代码与用户输入，简化成一个 Skill——/skill:lesson 或一句“记一笔”，agent 自动提炼标题/摘要/正文、写入 lesson/ 并把索引置顶插进每次会话自动加载的 AGENTS.md。讲清为什么 Skill 比 extension 更适合“智力在 LLM”的任务。</p>
     </article>
 
     <article class="page-entry">
