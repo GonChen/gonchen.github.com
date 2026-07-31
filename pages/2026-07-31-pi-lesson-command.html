@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>给 AI 编程助手装一个「经验本」：pi /lesson 命令实战</title>
+  <meta name="date" content="2026-07-31">
+  <meta name="summary" content="用 pi 的扩展机制写一个 /lesson 斜杠命令：一句标题即可在 ~/.pi/agent/lesson/ 生成带骨架的经验文件，并自动把索引行维护进每次会话自动加载的 AGENTS.md——让排查经验从「聊完就蒸发」变成「随用随取、索引永不过期」。含 registerCommand、ctx.ui 交互、索引置顶去重的完整实现。">
+  <meta name="tags" content="pi, AI Agent, 扩展, 知识管理">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a { color: #555; text-decoration: none; font-size: 14px; }
+    .site-nav a:hover { color: #111; }
+    .content { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    img { max-width: 100%; height: auto; display: block; margin: 1rem auto; border-radius: 4px; }
+    blockquote {
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db;
+      color: #555;
+      background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em;
+      background: #f3f4f6;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>给 AI 编程助手装一个「经验本」：pi /lesson 命令实战</h1>
+    <p class="meta"><time datetime="2026-07-31">2026-07-31</time></p>
+
+    <p>用 AI 编程助手（这里用的是 <a href="https://github.com/earendil-works/pi">pi</a>）排查问题有个通病：一次费尽九牛二虎之力搞定的环境难题——代理、TLS 证书、shell 路径——聊完那一刻知识密度最高，关掉会话后就慢慢蒸发。下次再撞上同类问题，又得从头查一遍。</p>
+
+    <p>这篇文章记录一个非常轻量的解法：给 pi 写一个 <code>/lesson</code> 斜杠命令，<strong>一句话标题</strong>就能生成带骨架的经验文件，并自动把索引维护进「每次会话都自动加载」的 <code>AGENTS.md</code>。核心收益不是「能记笔记」，而是<strong>索引永远和文件同步、且对助手常驻可见</strong>。</p>
+
+    <h2>问题：经验聊完就蒸发</h2>
+    <p>手写笔记当然可以，但有两个反人类的环节：</p>
+    <ul>
+      <li><strong>索引漂移</strong>：文件越写越多，目录/索引页长期跟不上，最后谁也懒得维护，笔记等于没有。</li>
+      <li><strong>对助手不可见</strong>：就算你记了，下次新会话里的助手根本不知道这些经验存在，照样重复踩坑。</li>
+    </ul>
+    <p>第二个问题更关键——既然每天都在和助手对话，让它「记得」自己曾经解决过什么，比给人看的笔记更有杠杆。</p>
+
+    <h2>设计：正文 + 常驻索引，二合一</h2>
+    <p>pi 约定 <code>~/.pi/agent/AGENTS.md</code> 是<strong>用户级上下文文件</strong>，每个会话启动时自动读进系统提示。所以把它当成「索引页」最合适：只放高复用的索引与摘要，正文放进 <code>lesson/</code> 子目录。</p>
+    <pre><code>~/.pi/agent/
+├── AGENTS.md                  # 每次会话自动加载：环境 + 索引表
+├── lesson/                    # 经验正文（一篇一个文件）
+│   └── network-proxy-tls-ca.md
+└── extensions/
+    └── lesson.ts              # /lesson 命令（pi 扩展）</code></pre>
+    <p>目标：跑一次 <code>/lesson &lt;标题&gt;</code>，同时完成「建模板文件」和「往索引表插一行」，彻底消灭手动维护索引这件事。</p>
+
+    <h2>机制：pi 扩展三件套</h2>
+    <p>pi 的扩展是一个导出默认工厂函数的 TypeScript 模块，用 jiti 加载，无需编译。</p>
+
+    <h3>1. 自动发现 + 热重载</h3>
+    <p>放在 <code>~/.pi/agent/extensions/*.ts</code> 就是全局扩展，所有项目生效。改完不用重启 pi，一条 <code>/reload</code> 即时生效——这对迭代小工具非常友好。</p>
+
+    <h3>2. registerCommand 注册斜杠命令</h3>
+    <pre><code>import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
+export default function (pi: ExtensionAPI) {
+  pi.registerCommand("lesson", {
+    description: "记录新经验：生成模板并更新 AGENTS.md 索引",
+    handler: async (args, ctx) =&gt; {
+      // args: 命令后的文本；ctx.ui: 与用户交互；ctx.hasUI: 是否有界面
+    },
+  });
+}</code></pre>
+
+    <h3>3. ctx.ui 做交互</h3>
+    <p>命令处理器拿到的 <code>ctx.ui</code> 提供对话框，签名很直白（记一下，<code>notify</code> 没有 <code>"success"</code>，只有 <code>info/warning/error</code>）：</p>
+    <pre><code>input(title: string, placeholder?: string): Promise&lt;string | undefined&gt;
+notify(message: string, type?: "info" | "warning" | "error"): void</code></pre>
+
+    <h2>命令行为</h2>
+    <ol>
+      <li>标题：取自命令参数，没给就弹 <code>input</code> 交互式输入。</li>
+      <li>摘要：再问一句「一句话摘要」，用于索引表。</li>
+      <li>在 <code>lesson/</code> 生成 <code>&lt;slug&gt;.md</code>，内置「背景/根因/解决方案/验证/注意」骨架。</li>
+      <li>往 <code>AGENTS.md</code> 的索引表<strong>置顶</strong>插一行，按链接去重。</li>
+    </ol>
+
+    <h2>关键实现</h2>
+
+    <h3>slugify：标题转文件名（保留中文）</h3>
+    <p>用 Unicode 属性转义 <code>\p{L}\p{N}</code> 保留所有字母与数字（含中文），其余折叠成 <code>-</code>。中文标题直接得到中文文件名，跨工具也没问题。</p>
+    <pre><code>function slugify(s: string): string {
+  return s.toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "-")   // 保留字母/数字(含中文)
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "lesson";
+}</code></pre>
+
+    <h3>ensureIndexRow：置顶 + 去重 + 缺表自建</h3>
+    <p>这是整个命令的价值所在。逻辑分三种情况，保证幂等（重复跑不会刷屏）：</p>
+    <ul>
+      <li><strong>链接已存在</strong>：直接返回，不重复加。</li>
+      <li><strong>有 Lessons 区块和表</strong>：找到 <code>|---|---|---|</code> 分隔行，紧随其后插入新行——新条目自然置顶。</li>
+      <li><strong>没有区块/表/甚至没有 AGENTS.md</strong>：自动补建标准表头。</li>
+    </ul>
+    <pre><code>function ensureIndexRow(relFile, title, summary) {
+  const rel = `lesson/${relFile}`;
+  const row = `| ${title} | [${rel}](${rel}) | ${summary} |`;
+  let content = existsSync(AGENTS_MD) ? readFileSync(AGENTS_MD, "utf-8") : "";
+  if (content.includes(`](${rel})`)) return;          // 去重
+
+  const lines = content.split(/\r?\n/);
+  const secIdx = lines.findIndex(l =&gt; l.trim() === "## Lessons / 经验手册");
+  if (secIdx === -1) { /* 追加新区块 */ return; }
+
+  // 区块内找分隔行，紧随其后插入（置顶）
+  for (let i = secIdx + 1; i &lt; lines.length; i++) {
+    if (lines[i].trim() === "|---|---|---|") { lines.splice(i + 1, 0, row); break; }
+    if (/^##\s/.test(lines[i].trim())) break;          // 进入了下一个区块
+  }
+  writeFileSync(AGENTS_MD, lines.join("\n"), "utf-8");
+}</code></pre>
+
+    <h3>把上面拼起来</h3>
+    <pre><code>handler: async (args, ctx) =&gt; {
+  let title = (args ?? "").trim()
+    || (ctx.hasUI ? (await ctx.ui.input("经验标题", "简短主题")) ?? "" : "");
+  if (!title) return ctx.ui.notify("已取消：标题为空", "warning");
+
+  const summary = ctx.hasUI
+    ? ((await ctx.ui.input("一句话摘要", "症状/要点")) ?? "").trim() : "";
+
+  const file = `${slugify(title)}.md`;
+  writeFileSync(join(LESSON_DIR, file), buildTemplate(title, summary), "utf-8");
+  ensureIndexRow(file, title, summary);
+  ctx.ui.notify(`已记录：${file}`, "info");
+}</code></pre>
+
+    <h2>工作流</h2>
+    <p>刚排查完一个问题后，两步走：</p>
+    <pre><code>/lesson Git 合并冲突处理        # 标题直接跟在后面
+/lesson                         # 或回车后交互式输入</code></pre>
+    <p>第一步建好骨架 + 索引；第二步紧接着对助手说「<strong>把刚才的排查过程整理写入刚建的文件</strong>」——它就会把当前会话里的根因、命令、验证整理成正文。因为索引已经同步好了，你完全不用碰 <code>AGENTS.md</code>。</p>
+
+    <h2>为什么比手写笔记强</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>维度</th><th>手写笔记</th><th>/lesson + AGENTS.md</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>索引维护</td><td>手动，长期漂移</td><td>命令自动置顶 + 去重</td></tr>
+          <tr><td>对助手可见</td><td>不可见</td><td>每次会话自动加载</td></tr>
+          <tr><td>正文产出</td><td>全手写</td><td>骨架自动 + 助手据对话补全</td></tr>
+          <tr><td>检索</td><td>翻文件夹</td><td>助手读索引即可定位</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>本质上，这是把「个人知识管理」嫁接到了 Agent 的上下文加载机制上：<strong>索引常驻、正文按需</strong>，既不撑爆系统提示，又让助手始终知道自己「曾经会什么」。整个扩展不到 150 行，却把一件原本反人类的事变成了顺手的一句命令。</p>
+
+    <hr>
+    <p>附：文中 <code>ctx.ui</code> 签名、扩展热重载等细节见 pi 官方扩展文档；这套 <code>lesson/</code> 目录本身就是用这个命令维护的，算是最直接的 dogfooding。</p>
+  </main>
+</body>
+</html>
