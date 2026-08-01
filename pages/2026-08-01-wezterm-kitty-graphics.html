@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WezTerm kitty graphics 显示不出图片？把这四个坑都排掉</title>
+  <meta name="date" content="2026-08-01">
+  <meta name="summary" content="想让 WezTerm 用 kitty graphics 协议显示图片，结果一路踩坑：序列漏下划线、stable 版本实现是坏的、enable_kitty_graphics 默认值误判、term 默认值。附 APC query 探测诊断法和换 nightly 的步骤。">
+  <meta name="tags" content="WezTerm, kitty graphics, 终端, 排查">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a { color: #555; text-decoration: none; font-size: 14px; }
+    .site-nav a:hover { color: #111; }
+    .content { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 1rem; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    img { max-width: 100%; height: auto; display: block; margin: 1rem auto; border-radius: 4px; }
+    blockquote {
+      margin: 1rem 0; padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db; color: #555; background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em; background: #f3f4f6; padding: 0.15em 0.4em; border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px;
+      font-size: 0.85rem; line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav"><a href="/">&#8592; CoolGPU</a></nav>
+  <main class="content">
+    <h1>WezTerm kitty graphics 显示不出图片？把这四个坑都排掉</h1>
+    <p class="meta"><time datetime="2026-08-01">2026-08-01</time></p>
+
+    <p>WezTerm 支持 kitty graphics 协议——能在终端里直接渲染图片。yazi 的图片预览、终端里看 PDF/视频，乃至把整个 GUI 应用渲染进终端的工具，都依赖它。我满心欢喜配好想用，结果：先是终端吐了一行乱码，改完又一片空白。折腾一圈下来，发现是四个坑叠在一起。这篇把排查过程和每个坑的解法记下来，免得你再踩一遍。</p>
+
+    <p>背景很简单：本地 WezTerm，<code>ssh</code> 连远程 Linux 机器，想在远程发 kitty graphics 序列、由本地 WezTerm 渲染出图。</p>
+
+    <h2>坑 1：序列开头漏了下划线（APC）</h2>
+    <p><strong>症状</strong>：跑测试脚本，终端把一坨 base64 当文字打印出来，显示一长行乱码，没有图。</p>
+    <p><strong>根因</strong>：kitty graphics 协议规定，所有图形指令的 escape 序列形如：</p>
+    <p><code>&lt;ESC&gt;_G&lt;key=value,...&gt;;&lt;base64&gt;&lt;ESC&gt;\</code></p>
+    <p>注意开头是 <strong>ESC + 下划线 + G（<code>\x1b_G</code>）</strong>，这叫 <em>APC</em>（Application Programming Command）。我一开始写成了 <code>\x1bG</code>（漏了下划线）：</p>
+    <pre><code># 错误：漏了下划线，不是 APC
+sys.stdout.write("\x1bGa=T,i=1,s=16,v=16,f=24;" + b64 + "\x1b\\")
+
+# 正确：ESC _ G 三件套
+sys.stdout.write("\x1b_Ga=T,i=1,s=16,v=16,f=24;" + b64 + "\x1b\\")</code></pre>
+    <p>漏了 <code>_</code>，<code>\x1bG</code> 不再是 APC，WezTerm 压根不把它当图形命令，于是分号后面的 base64 被当作普通文字打印出来——这就是“一行乱码”。</p>
+    <blockquote>这坑最阴的地方：<code>\x1b_G</code> 里那个下划线，在很多等宽字体里非常不显眼，抄代码 / 写代码时极易漏。记住口诀：<strong>kitty 图形序列开头是 <code>ESC _ G</code> 三件套</strong>。</blockquote>
+    <p>协议细节见 <a href="https://sw.kovidgoyal.net/kitty/graphics-protocol/" target="_blank" rel="noopener">官方文档</a>。</p>
+
+    <h2>坑 2：stable 版本的 kitty graphics 实现是坏的</h2>
+    <p><strong>症状</strong>：修好序列后，变成什么都不显示，一片空白。</p>
+    <p>我按网上教程在配置里加 <code>enable_kitty_graphics = true</code>、重启 WezTerm——还是不行。</p>
+    <p>排查链路（见下面“诊断方法”）排除了 ssh、tmux、TERM，最后定位到：<strong>WezTerm 的 stable 版本 <code>20240203</code> 的 kitty graphics 实现本身是坏的</strong>。</p>
+    <ul>
+      <li><code>20240203</code> 是 WezTerm <strong>最后一个 stable 版本</strong>（2024 年 2 月，到我用时已经一年半没更新）。</li>
+      <li>GitHub 上相关 issue 一大把：<a href="https://github.com/wezterm/wezterm/issues/3817" target="_blank" rel="noopener">#3817</a> “Kitty graphics protocol horribly non-conformant”、<a href="https://github.com/wezterm/wezterm/issues/2716" target="_blank" rel="noopener">#2716</a> “Kitty protocol produces garbled or <em>no output</em> in specific cases”——“no output” 正是我的症状。</li>
+      <li>这些 bug 的修复<strong>只进了 nightly，stable 从未跟进</strong>。所以无论怎么配，stable 就是不出图。</li>
+    </ul>
+
+    <h2>诊断方法：APC query 探测（强烈推荐）</h2>
+    <p>怎么确认是“终端不支持”，而不是“序列写错了”或“中间层（ssh/tmux）把序列吞了”？用 kitty graphics 的 <em>query action</em> 配合 DA1 来探测。</p>
+    <p>协议规定：发一个 query（<code>a=q</code>），支持的终端会回 <code>OK</code> 或错误信息；紧接着发一个 DA1（Primary Device Attributes，几乎所有终端都回）。如果你<strong>只收到 DA1、没收到 query 的回包</strong>，就说明终端不支持 kitty graphics。</p>
+    <pre><code># 在被测终端的交互 shell 里跑
+python3 -c '
+import sys,os,select,time,termios,tty
+fd=sys.stdin.fileno()
+old=termios.tcgetattr(fd)
+tty.setraw(fd)
+sys.stdout.write("\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\")  # kitty query
+sys.stdout.write("\x1b[c")                                       # DA1
+sys.stdout.flush(); time.sleep(0.15)
+resp=b""
+while select.select([sys.stdin],[],[],0.4)[0]:
+    c=os.read(fd,4096)
+    if not c: break
+    resp+=c
+termios.tcsetattr(fd,termios.TCSADRAIN,old); sys.stdout.write("\r\n")
+print(repr(resp))
+print("kitty supported:", b"_G" in resp)
+'</code></pre>
+    <p>判读：</p>
+    <ul>
+      <li>回包里有 <code>\x1b_Gi=31;OK</code> → 支持。</li>
+      <li>只有 <code>\x1b[?...c</code>（DA1）、没有 <code>_G</code> → 不支持 / 未启用。</li>
+    </ul>
+    <p>我那台 stable WezTerm 跑出来就是只有 DA1、没有 kitty 回包——铁证。</p>
+    <p>两个小坑：</p>
+    <ol>
+      <li>python 读响应要用 <code>termios</code>（Unix）。<strong>别用 <code>python3 - &lt;&lt;'EOF'</code> 这种 heredoc 喂代码</strong>——heredoc 会占用 stdin，导致 <code>tcgetattr</code> 报 <code>ENOTTY (25, Inappropriate ioctl for device)</code>。要用 <code>python3 -c '...'</code>，让 stdin 保持是 tty。</li>
+      <li>先 <code>echo "$TMUX $STY"</code> 排除 tmux/screen（它们默认会吞掉 APC 序列，需要 <code>set -g allow-passthrough on</code>，tmux ≥ 3.3）。再在本地直连（不经 ssh）测一遍，排除 ssh 链路。</li>
+    </ol>
+    <p>Windows 本地（PowerShell）直连测试，不依赖 python/bash：</p>
+    <pre><code>$e=[char]27; [Console]::Write("${e}_Ga=T,f=24,s=80,v=80,c=4,r=4;" + [Convert]::ToBase64String([byte[]](@(255,0,0)*6400)) + "${e}\")</code></pre>
+    <p>我本地直连也是空白——彻底排除 ssh/tmux，坐实是 WezTerm 自身的问题。</p>
+
+    <h2>解法：换 nightly</h2>
+    <p>WezTerm 没有“正式稳定版”的发布节奏，主力是 nightly（每天从 main 分支构建），stable 已经一年半没动。kitty graphics 的修复都在 nightly。</p>
+    <p>Windows 便携版下载（GitHub releases 的 nightly tag）：</p>
+    <pre><code>https://github.com/wezterm/wezterm/releases/download/nightly/WezTerm-windows-nightly.zip</code></pre>
+    <p>下载、解压、跑里面的 <code>wezterm-gui.exe</code>（它和 stable 共用 <code>~/.wezterm.lua</code> 配置）。再跑一遍上面的 APC query 探测：回包变成 <code>\x1b_Gi=31;OK</code>、<code>kitty supported: True</code>，红块也出来了。</p>
+    <blockquote>如果你用 scoop，注意 scoop 的 extras bucket 只有 stable；nightly 要么手动下便携版，要么找别的途径。我是把 nightly 便携版解压到固定目录、加进 PATH、建好快捷方式，再卸掉了 scoop 的 stable。</blockquote>
+
+    <h2>坑 3：enable_kitty_graphics 的默认值（你以为要开，其实新版默认就开）</h2>
+    <p>排查时我一直纠结 <code>enable_kitty_graphics</code> 默认到底是 true 还是 false——很多老文章说“要手动开”，也有人说“2021 年底就默认开了”，众说纷纭。</p>
+    <p>我的实测结论：</p>
+    <ul>
+      <li>在坏的 stable 上，设不设都一样（版本 bug，开了也没用）。</li>
+      <li>在 nightly 上，<strong>默认就是开启的，这行是冗余的</strong>。</li>
+    </ul>
+    <p>佐证：去翻新版官方文档（wezterm.org），<code>enable_kitty_graphics</code> 这个选项的页面直接 <strong>404</strong>，配置选项总览里也不再列它——说明新版已经把它移除了（默认开启、不可关闭）。我把这行从配置里注释掉，nightly 照样出图。</p>
+    <p>所以：用 nightly 的话，<code>.wezterm.lua</code> 里不用写 <code>enable_kitty_graphics = true</code>。</p>
+
+    <h2>坑 4：term 默认是 xterm-256color，不是 wezterm</h2>
+    <p>顺带一个容易混的点：WezTerm 的 <code>term</code> 配置项（决定发给子进程的 <code>$TERM</code>）<strong>默认是 <code>xterm-256color</code></strong>，不是 <code>wezterm</code>。</p>
+    <p>如果你想要 <code>TERM=wezterm</code>（启用彩色 / 样式下划线、undercurl、斜体等高级 terminfo 特性），需要：</p>
+    <ol>
+      <li>在远程机器装 wezterm 的 terminfo：
+        <pre><code>curl -o /tmp/w https://raw.githubusercontent.com/wezterm/wezterm/main/termwiz/data/wezterm.terminfo
+tic -x -o ~/.terminfo /tmp/w</code></pre>
+      </li>
+      <li>配置里设 <code>config.term = 'wezterm'</code>。</li>
+    </ol>
+    <blockquote>kitty graphics 协议本身<strong>不依赖</strong> TERM/terminfo（它是 APC escape 序列，终端直接解析）。<code>term=wezterm</code> 影响的是 ncurses 那类程序的高级显示能力，和出不出图没关系——别把它们混为一谈。</blockquote>
+
+    <h2>检查清单</h2>
+    <p>把上面四个坑浓缩成一张排查表：</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>症状</th><th>查什么</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>终端打印出一行 base64 / 乱码</td><td>序列开头是不是 <code>\x1b_G</code>（APC，下划线别漏），不是 <code>\x1bG</code></td></tr>
+          <tr><td>什么都不显示、空白</td><td>① tmux/screen 是否吞了 APC（<code>echo $TMUX</code>）② WezTerm 版本是不是停在 stable <code>20240203</code>（换 nightly）</td></tr>
+          <tr><td>想确认终端到底支不支持</td><td>跑 APC query 探测，看回包有没有 <code>\x1b_Gi=31;OK</code></td></tr>
+          <tr><td>配了 <code>enable_kitty_graphics=true</code> 没用</td><td>stable 上是版本 bug；nightly 默认就开，这行多余</td></tr>
+          <tr><td>远程程序样式 / 下划线不对</td><td><code>term</code> 默认 xterm-256color；要 wezterm 得在远程装 terminfo</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>一句话总结：WezTerm 出不了 kitty graphics 图，先查序列的 <code>_</code>，再查版本别停在老 stable，剩下都是配置细节。</p>
+  </main>
+</body>
+</html>
