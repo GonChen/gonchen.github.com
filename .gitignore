@@ -4,3 +4,4 @@ Thumbs.db
 .deploy*/
 node_modules/
 .DS_Store
+.playwright-cli/
