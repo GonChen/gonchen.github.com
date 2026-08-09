@@ -1,0 +1,50 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - heading "CoolGPU" [level=1] [ref=e5]
+      - paragraph [ref=e6]: 寻找乐趣, 寻找生活 — ML / GPU Kernel / 技术笔记
+    - article [ref=e7]:
+      - generic [ref=e8]: 最新
+      - heading "Cursor 3.9+ macOS 精简分流:V2rayU + tun2socks 强制 AI 通道走代理" [level=2] [ref=e9]:
+        - link "Cursor 3.9+ macOS 精简分流:V2rayU + tun2socks 强制 AI 通道走代理" [ref=e10] [cursor=pointer]:
+          - /url: /pages/2026-07-05-cursor-macos-v2rayu-split-tunnel.html
+      - paragraph [ref=e11]: Cursor 3.9+ 的 AlwaysLocal 子进程不认 http.proxy 与 V2rayU 全局模式。记录一套按需分流方案:DoH@SOCKS5 → /etc/hosts → utun2socks 主机路由,仅劫持 Cursor IP,强制 AI 通道经 V2rayU 1080 出境。
+      - time [ref=e12]: 2026-07-05
+    - generic [ref=e13]:
+      - article [ref=e14]:
+        - time [ref=e15]: 2026-07-04
+        - generic [ref=e16]:
+          - heading "2026中国AI智能体大会 · 参会记实" [level=3] [ref=e17]:
+            - link "2026中国AI智能体大会 · 参会记实" [ref=e18] [cursor=pointer]:
+              - /url: /pages/2026-07-04-ai-agent-conference.html
+          - paragraph [ref=e19]: 「2026中国AI智能体大会」于7月2日至7月3日在杭州举办。记录开幕式及三场闭门研讨核心收获,含 94 页胶片全集子页。
+      - article [ref=e20]:
+        - time [ref=e21]: 2026-06-02
+        - generic [ref=e22]:
+          - heading "Windows + tmux + Claude Code:持久化 SSH 会话工作流" [level=3] [ref=e23]:
+            - link "Windows + tmux + Claude Code:持久化 SSH 会话工作流" [ref=e24] [cursor=pointer]:
+              - /url: /pages/2026-06-02-windows-tmux-claude-code-ssh.html
+          - paragraph [ref=e25]: tmux 在远程机器上保持会话,本地客户端可以随时重连,断开也不会影响远程任务的继续执行。
+      - article [ref=e26]:
+        - time [ref=e27]: 2026-05-31
+        - generic [ref=e28]:
+          - heading "X 社区热议:Attention Kernel 优化趋势 (2026-05)" [level=3] [ref=e29]:
+            - link "X 社区热议:Attention Kernel 优化趋势 (2026-05)" [ref=e30] [cursor=pointer]:
+              - /url: /pages/2026-05-31-attention-kernel-x-search.html
+          - paragraph [ref=e31]: "Great technical talk by @tedzadouri on FlashAttention-4: a deep look at how attention kernels are being redesigned for NVIDIA Blackwell."
+      - article [ref=e32]:
+        - time [ref=e33]: 2026-05-31
+        - generic [ref=e34]:
+          - heading "Attention Kernel Optimization 研究报告" [level=3] [ref=e35]:
+            - link "Attention Kernel Optimization 研究报告" [ref=e36] [cursor=pointer]:
+              - /url: /pages/2026-05-31-attention-kernel-optimization-report.html
+          - paragraph [ref=e37]: FlashAttention-4 登顶 Blackwell(1,613 TFLOPs/s),FlashQLA 和 cuLA 代表线性 attention 两条路径。
+    - contentinfo [ref=e38]:
+      - link "GitHub" [ref=e39] [cursor=pointer]:
+        - /url: https://github.com/GonChen
+      - text: · © 2026 Gong Chen
+  - text: ▊
+  - generic [ref=e40]:
+    - button "◀" [ref=e41] [cursor=pointer]
+    - generic [ref=e42]: A — 杂志头版
+    - button "▶" [ref=e43] [cursor=pointer]
