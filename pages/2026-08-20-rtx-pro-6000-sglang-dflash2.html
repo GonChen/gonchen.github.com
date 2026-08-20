@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RTX PRO 6000 Blackwell 跑 Qwen3.8-27B-FP8：从 46 到 251 tok/s 的 SGLang 部署</title>
+  <meta name="date" content="2026-08-20">
+  <meta name="summary" content="在 8× RTX PRO 6000 Blackwell（SM120，工作站级而非数据中心级）上用 SGLang 部署 Qwen3.8-27B-FP8 混合 GDN 模型。从第一性原理讲清三件事：为什么 SM120 是部署的第一道墙、为什么投机解码是 GDDR7 上的正确杠杆、以及 DFlash2 凭 accept len 5.1 把单流 decode 从 46 推到 251 tok/s（5.4×）。附 TP1/TP2 × DSpark/DFlash2 全矩阵实测与 9 个部署坑。">
+  <meta name="tags" content="SGLang, Blackwell, SM120, 投机解码, DFlash2, FP8, 部署, 性能">
+  <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .site-nav {
+      position: sticky; top: 0; z-index: 100; height: 40px;
+      display: flex; align-items: center; padding: 0 16px;
+      background: rgba(250, 250, 250, 0.92);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .site-nav a { color: #555; text-decoration: none; font-size: 14px; }
+    .site-nav a:hover { color: #111; }
+    .content { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.75rem; line-height: 1.3; margin: 0 0 0.5rem; }
+    h2 { font-size: 1.35rem; margin: 2.2rem 0 0.75rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; }
+    a { color: #2563eb; }
+    img, svg { max-width: 100%; height: auto; display: block; margin: 1rem auto; }
+    blockquote {
+      margin: 1rem 0; padding: 0.5rem 1rem;
+      border-left: 3px solid #d1d5db; color: #555; background: #f3f4f6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.9em; background: #f3f4f6;
+      padding: 0.15em 0.4em; border-radius: 3px;
+    }
+    pre {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      background: #1e1e1e; color: #d4d4d4;
+      padding: 1rem; border-radius: 6px; font-size: 0.85rem; line-height: 1.55;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: #f9fafb; font-weight: 600; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    .meta { color: #888; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .callout {
+      border: 1px solid #e5e7eb; border-radius: 8px;
+      background: #fff; padding: 0.75rem 1rem; margin: 1rem 0;
+    }
+    .callout .k { font-weight: 600; }
+    .tldr { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .foot { color: #888; font-size: 0.82rem; }
+    .hl { color: #1d4ed8; font-weight: 600; }
+    .pit { border-left: 3px solid #f59e0b; background: #fffbeb; padding: 0.6rem 1rem; margin: 0.9rem 0; border-radius: 0 6px 6px 0; }
+    .pit b { color: #92400e; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/">← CoolGPU</a>
+  </nav>
+  <main class="content">
+    <h1>RTX PRO 6000 Blackwell 跑 Qwen3.8-27B-FP8：从 46 到 251 tok/s 的 SGLang 部署</h1>
+    <p class="meta"><time datetime="2026-08-20">2026-08-20</time> · SGLang · Blackwell SM120 · 投机解码</p>
+
+    <p>这篇记录一次完整的「工作站级 Blackwell 上部署大模型推理服务」的实战：在一台 8× <b>NVIDIA RTX PRO 6000 Blackwell</b>（单卡 96GB GDDR7，计算能力 <b>SM120</b>）的节点上，用 <b>SGLang</b> 部署 <b>Qwen3.8-27B-FP8</b>（混合 GDN 线性注意力 + 全注意力的视觉语言模型），并叠加<b>投机解码</b>，最终把单流 decode 从基线 <b>46 tok/s 推到 251 tok/s（5.4×）</b>，高并发 C16 聚合 <b>3524 tok/s</b>。</p>
+
+    <p>它有意思的地方不在「调参」，而在三个容易被忽略的结构性事实：<b>① 你买到的 Blackwell 不一定是数据中心那块</b>（SM120 和 SM100 的 FP8 栈不通用，这是第一道墙）；<b>② 对带宽受限的 decode，投机解码才是 GDDR7 上的正确杠杆</b>（而不是继续抠 FP8 GEMM）；<b>③ 两种 draft 架构（DSpark 的独立 Markov 头 vs DFlash2 的候选选择器）差距完全由一个指标决定 —— accept length</b>。下面按「约束 → 方案 → 实测 → 坑」的顺序走。</p>
+
+    <div class="callout tldr">
+      <span class="k">TL;DR · 核心数字</span>
+      <ul style="margin:0.5rem 0 0">
+        <li>硬件：8× RTX PRO 6000 Blackwell（96GB/卡，SM120，600W），2× Xeon 8558P（96 核），2TB RAM，RHEL 9.6。</li>
+        <li>主服务：<span class="hl">DFlash2 · TP2（GPU6+7，PCIe Gen5 x16 PIX）</span> · SGLang master · FP8 target · port 8000。</li>
+        <li>单流 decode：<b>46.6（无投机基线）→ 251.6 tok/s</b>（5.4×）；C16 聚合 <b>3524 tok/s</b>。</li>
+        <li>关键杠杆排序：投机解码（DSpark 1.7×）→ 换 DFlash2（accept len 3.3→5.1，再 +46%）→ TP2（单流 +54%）。</li>
+        <li>TTFT（2k prompt）仅 <b>62 ms</b>（GDN 线性注意力 O(n) prefill 的红利）。</li>
+      </ul>
+    </div>
+
+    <h2>1. 第一道墙：你的 Blackwell 是 SM120，不是 SM100</h2>
+    <p>部署前最该先确认的一件事，是这块 Blackwell 的<b>计算能力</b>。RTX PRO 6000 / RTX 50 系属于 <b>SM120</b>（工作站 / 专业级 Blackwell），而 B100 / B200 / GB200 数据中心卡是 <b>SM100</b>。两者虽然都叫 Blackwell、都原生支持 FP8，但<b>预编译的 kernel 栈不通用</b>：</p>
+    <ul>
+      <li>FlashInfer 预编译 cubin 包只带 SM100，SM120 必须走 <b>源码 JIT 编译</b>；</li>
+      <li><code>trtllm_mha</code> 等数据中心 attention 后端是 <b>SM100-only</b>，SM120 用不了；</li>
+      <li>FlashInfer 要求 <b>CUDA ≥ 12.9</b> 才会把 SM12.x 识别进编译目标。</li>
+    </ul>
+    <p>这个区分的直接后果：一套在 B200 上「开箱即用」的 FP8 推理栈，搬到 SM120 上会连环报错（DeepGEMM "Unknown recipe"、flashinfer "trtllm not supported on capability 120"、cutlass/triton 吐垃圾 token）。所以<b>第一性结论是：先按「SM120 需要自己 JIT、且工具链门槛更高」来选版本</b>——SGLang 要用 0.5.17+（Day-0 支持 Qwen3.8 + SM120），而不是社区跑 B200 的旧版本。</p>
+
+    <h2>2. 部署方案</h2>
+    <h3>2.1 硬件与拓扑</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>项目</th><th>规格</th></tr></thead>
+        <tbody>
+          <tr><td>GPU</td><td>NVIDIA RTX PRO 6000 Blackwell Server Edition × 8（96GB GDDR7 / 卡，SM120，600W）</td></tr>
+          <tr><td>GPU 互联</td><td>PCIe Gen5 x16；无 NVLink；PIX P2P（TP 首选）：(1,2)(1,3)(2,3)@NUMA0、(4,5)(6,7)@NUMA1</td></tr>
+          <tr><td>CPU</td><td>2× Intel Xeon Platinum 8558P（96 核，L3 520MB）</td></tr>
+          <tr><td>内存</td><td>2TB DDR5</td></tr>
+          <tr><td>OS / 驱动 / CUDA</td><td>RHEL 9.6 · 驱动 595.45.04 · 系统 nvcc 12.8 + 另装 <code>/usr/local/cuda-13.2</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>选 <b>GPU6+7</b> 做 TP2 是因为它们在拓扑表里是 <code>PIX</code>（同一 PCIe switch 下的 P2P 直连，同 NUMA1）——TP 的 allreduce 走这条最便宜的路。跨 NUMA（<code>SYS</code>）的卡对会多一层 UPI，TP 通信变慢，不选。</p>
+
+    <svg viewBox="0 0 680 190" role="img" aria-label="8 GPU PCIe 拓扑，高亮 GPU6+7 PIX 对">
+      <defs>
+        <style>
+          .glabel{font:11px -apple-system,sans-serif;fill:#334155;text-anchor:middle}
+          .gbox{fill:#e2e8f0;stroke:#94a3b8;stroke-width:1}
+          .gbox.on{fill:#2563eb;stroke:#1d4ed8}
+          .numa{fill:#f8fafc;stroke:#cbd5e1;stroke-dasharray:4 3}
+          .numat{font:11px -apple-system,sans-serif;fill:#64748b}
+          .link{stroke:#64748b;stroke-width:1.5}
+          .link.node{stroke:#94a3b8;stroke-dasharray:4 3}
+          .link.hot{stroke:#2563eb;stroke-width:3}
+          .leg{font:10px -apple-system,sans-serif;fill:#64748b}
+        </style>
+      </defs>
+      <!-- NUMA frames -->
+      <rect class="numa" x="12" y="18" width="316" height="120" rx="8"/>
+      <rect class="numa" x="352" y="18" width="316" height="120" rx="8"/>
+      <text class="numat" x="24" y="36">NUMA 0（CPU 0-47）</text>
+      <text class="numat" x="364" y="36">NUMA 1（CPU 48-95）</text>
+      <!-- NUMA0 GPUs: PIX 对 (1,2)(2,3)，0-1 为同 NUMA 无直连 -->
+      <g>
+        <rect class="gbox" x="36" y="60" width="52" height="34" rx="5"/><text class="glabel" x="62" y="81">GPU0</text>
+        <rect class="gbox" x="108" y="60" width="52" height="34" rx="5"/><text class="glabel" x="134" y="81">GPU1</text>
+        <rect class="gbox" x="180" y="60" width="52" height="34" rx="5"/><text class="glabel" x="206" y="81">GPU2</text>
+        <rect class="gbox" x="252" y="60" width="52" height="34" rx="5"/><text class="glabel" x="278" y="81">GPU3</text>
+        <line class="link node" x1="88" y1="77" x2="108" y2="77"/>
+        <line class="link" x1="160" y1="77" x2="180" y2="77"/>
+        <line class="link" x1="232" y1="77" x2="252" y2="77"/>
+      </g>
+      <!-- NUMA1 GPUs: PIX 对 (4,5)(6,7)，5-6 为同 NUMA 无直连 -->
+      <g>
+        <rect class="gbox" x="376" y="60" width="52" height="34" rx="5"/><text class="glabel" x="402" y="81">GPU4</text>
+        <rect class="gbox" x="448" y="60" width="52" height="34" rx="5"/><text class="glabel" x="474" y="81">GPU5</text>
+        <rect class="gbox on" x="520" y="60" width="52" height="34" rx="5"/><text class="glabel" x="546" y="81" style="fill:#fff">GPU6</text>
+        <rect class="gbox on" x="592" y="60" width="52" height="34" rx="5"/><text class="glabel" x="618" y="81" style="fill:#fff">GPU7</text>
+        <line class="link" x1="428" y1="77" x2="448" y2="77"/>
+        <line class="link node" x1="500" y1="77" x2="520" y2="77"/>
+        <line class="link hot" x1="572" y1="77" x2="592" y2="77"/>
+      </g>
+      <!-- highlight label -->
+      <line class="link hot" x1="546" y1="94" x2="546" y2="118"/>
+      <text class="glabel" x="546" y="132" style="fill:#1d4ed8;font-weight:600">TP2 主服务（PIX P2P）</text>
+      <!-- legend -->
+      <text class="leg" x="24" y="164">实线 = PIX（同 PCIe switch P2P 直连，TP 首选）· 虚线 = 同 NUMA 无直连 · 蓝色 = 本部署 TP2 卡对（GPU6+7）</text>
+    </svg>
+
+    <h3>2.2 软件栈：为什么要两套 venv</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>venv</th><th>SGLang</th><th>PyTorch</th><th>FlashInfer</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>.venv</code></td><td>0.5.17（官方）</td><td>2.11.0+cu130</td><td>0.6.15.post1</td><td>DSpark 部署（0.5.17 支持 DSPARK）</td></tr>
+          <tr><td><code>.venv-sglang-dev</code></td><td>master（含 DFlash2）</td><td>2.13.0</td><td>0.6.17</td><td><b>当前主服务</b>：DFlash2 只在 master 有</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>关键约束：<b>DFlash2 的候选选择器（<code>CandidateSelector</code> / <code>selector_rank</code> / <code>conv_group</code>）在官方 0.5.17 里不存在</b>，是 8/19 才合进 master 的（#35371）。所以要么把生产 venv 升到 master（会破坏正在跑的 DSpark 依赖），要么<b>另起一个隔离 venv 装 master</b>。后者风险最低——两套 venv 并存，各自 <code>CUDA_VISIBLE_DEVICES</code> 不重叠即可。这是「不为了新特性去动生产环境」的朴素工程判断。</p>
+
+    <h3>2.3 模型与架构</h3>
+    <p><b>Qwen3.8-27B-FP8</b> 是一个混合架构的视觉语言模型，理解它的层布局是理解整套部署参数的前提：</p>
+    <ul>
+      <li>总 64 层 = 16 组 × [ 3×(GDN→FFN) + 1×(GQA→FFN) ]；</li>
+      <li><b>48 层是 GDN（Gated DeltaNet 线性注意力）</b>，<b>16 层是 GQA 全注意力</b>；</li>
+      <li>hidden 5120，FFN 17408；FP8 e4m3 <b>blockwise（[128,128]）动态量化</b>；原生上下文 262144（可扩到 1M）。</li>
+    </ul>
+    <p>这个「48 线性 + 16 全注意力」的混合结构，直接决定了后面两个参数为什么那样取（KV cache 只给 16 层全注意力用、GDN 另有一套 state 池）。</p>
+
+    <h3>2.4 为什么是投机解码：decode 是带宽受限的</h3>
+    <p>先讲清楚「为什么投机解码在这台机器上是正确的杠杆」，否则后面的数字没有解释力。27B 模型单流 decode 时，<b>每生成一个 token 都要把 ~29GB 权重从显存读一遍</b>——这是典型的<b>内存带宽受限</b>（memory-bound）：算得再快，也快不过搬数据。FP8 已经把权重体积砍半，但单流 decode 的瓶颈仍是「每个 token 一次全量权重读」。</p>
+    <p>投机解码的本质是<b>把多次权重读摊薄</b>：用一个很小的 draft 模型先「猜」出 γ 个候选 token，再用目标模型<b>一次 forward 并行验证</b>这 γ+1 个位置（一次权重读换最多 γ+1 个 token）。只要接受率足够高，等效于把「每 token 一次权重读」变成「每 ~5 个 token 一次权重读」。所以收益的天花板完全由 <b>accept length</b>（平均每次验证接受几个）决定——这也是后面对比 DSpark vs DFlash2 时唯一的根指标。</p>
+    <div class="callout">
+      <span class="k">一个反直觉点</span>
+      <p style="margin:0.4rem 0 0">把 FP8 GEMM 再抠快，对<b>单流</b> decode 几乎没用（实测方案 A 单流仍是 46.6 tok/s，和基线一样）——因为瓶颈不在算。投机解码才是打带宽瓶颈的那一棒。FP8 的真正价值体现在<b>高并发</b>（更多请求共享权重读）和<b>显存</b>（KV cache 减半）。分清楚「单流靠投机、并发靠 FP8+ batching」，就不会把力气用错地方。</p>
+    </div>
+
+    <h3>2.5 启动参数与「为什么」</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>参数</th><th>值</th><th>为什么这么取</th></tr></thead>
+        <tbody>
+          <tr><td><code>--attention-backend</code></td><td><code>flashinfer</code></td><td>SM120 上唯一能正常跑 GQA 全注意力 + sampling 且性能好的后端；<code>trtllm_mha</code> 仅 SM100</td></tr>
+          <tr><td><code>--kv-cache-dtype</code></td><td><code>fp8_e4m3</code></td><td>KV cache 显存减半（32.8 vs 65.5 KB/token），SM120 原生 FP8，把显存让给并发</td></tr>
+          <tr><td><code>--chunked-prefill-size</code></td><td><code>2048</code></td><td>混合 GDN 模型推荐值，避免 prefill/decode 抢占造成延迟抖动</td></tr>
+          <tr><td><code>--mem-fraction-static</code></td><td>0.88（TP2）</td><td>静态显存分配比例，TP2 双卡各放一半权重，余量更紧</td></tr>
+          <tr><td><code>--mamba-ssm-dtype</code></td><td><code>bfloat16</code></td><td>GDN state 槽位减半（153.9→78.4 MB），官方标为「精度闸门」需验证，实测质量正常</td></tr>
+          <tr><td><code>--mamba-full-memory-ratio</code></td><td><code>6.08</code></td><td>GDN state 池与 KV 池的配比，官方 cookbook 对「spec + bf16 state + fp8 KV」的平衡值</td></tr>
+          <tr><td><code>--mamba-radix-cache-strategy</code></td><td><code>extra_buffer</code></td><td>每请求 5 个 state slot（spec 验证需要额外状态副本）</td></tr>
+          <tr><td><code>--speculative-algorithm</code></td><td><code>DFLASH</code></td><td>用 DFlash2（见 §2.6）；早期为 <code>DSPARK</code></td></tr>
+          <tr><td><code>--speculative-dflash-block-size</code></td><td><code>8</code></td><td>DFlash2 的 verify 窗口，与 draft 训练配置一致</td></tr>
+          <tr><td><code>--reasoning-parser</code> / <code>--tool-call-parser</code></td><td><code>qwen3</code> / <code>qwen3_coder</code></td><td>Qwen3.8 是思维链模型，解析 <code>reasoning_content</code> 与工具调用</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>服务监听 <code>0.0.0.0:8000</code>，同时提供 <b>OpenAI</b>（<code>/v1/chat/completions</code>）与 <b>Anthropic</b>（<code>/v1/messages</code>）双协议，共享同一模型实例和投机加速，未设 <code>--api-key</code>（内网可信，任意 key 即可）。并发上限 <code>max_running_requests=48</code>（受 GDN state 槽位约束）。</p>
+
+    <h3>2.6 两种 draft 策略：DSpark vs DFlash2</h3>
+    <p>这次部署先后试了两套 draft 架构，它们的差异是整篇性能故事的核心：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>DSpark（早期）</th><th>DFlash2（当前主服务）</th></tr></thead>
+        <tbody>
+          <tr><td>来源</td><td><code>RadixArk/Qwen3.8-27B-DSpark</code>（1.36B，2.6GB）</td><td><code>z-lab/Qwen3.8-27B-DFlash2</code>（3.85GB）</td></tr>
+          <tr><td>draft 结构</td><td>5 层全注意力 + 独立 <b>Markov 置信度头</b>（rank 256）</td><td>5 层 sliding-attention（window 2048）+ <b>候选选择器</b>（<code>top_k=16</code>，复用目标模型自己的 lm_head）</td></tr>
+          <tr><td>verify 窗口</td><td>block_size=7（γ=7，verify 8）</td><td>block_size=8（verify 更长）</td></tr>
+          <tr><td>候选怎么来</td><td>小 Markov 头自己算</td><td>用<b>目标模型 lm_head 算 top-k 候选</b>（自洽、更准），大 vocab 靠 flashinfer top_k「免费」</td></tr>
+          <tr><td>是否进 CUDA graph</td><td>—</td><td>selector <b>折叠进 CUDA graph，无额外延迟</b></td></tr>
+          <tr><td><b>accept len（根指标）</b></td><td><b>~3.3</b></td><td><b>~5.1</b>（+55%）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>一句话：<b>DFlash2 用「目标模型自己的 lm_head 出候选」比 DSpark「独立小 Markov 头出候选」更自洽</b>，加上更长的 verify 窗口，accept len 从 3.3 拉到 5.1——这就是它全面更快的根本原因，后面用数字坐实。</p>
+
+    <h2>3. 实测性能</h2>
+    <h3>3.1 测试方法（口径先说清）</h3>
+    <ul>
+      <li>脚本 <code>benchmark.py</code>（urllib + 线程池），<b>每请求独立测</b>避免日志交叉污染；</li>
+      <li>统一用<b>代码生成 prompt</b>（写一个带错误处理 / 类型标注 / docstring 的 CSV 解析函数）、<b>256 token 输出</b>、<code>temperature=0.3</code>、<code>reasoning_effort=none</code>（关掉思维链，纯测 decode）；</li>
+      <li>单流 C1 取 5 次均值；并发 C4/C16 为聚合吞吐 <code>总 token / wall 时间</code>；</li>
+      <li><b>口径提醒</b>：投机解码吞吐对 prompt 领域<b>高度敏感</b>（接受率随领域变）。代码 / 数学类接受率最高，创意 / 长文类明显更低。下表的 DSpark/DFlash2 都是代码 prompt 的「好情形」；同一 DSpark 在通用 prompt 下 C16 只有 ~805 tok/s（vs 代码 prompt 的 1929）。跨表比时先看 prompt 是否同口径。</li>
+    </ul>
+
+    <h3>3.2 单流 decode：5.4× 的台阶</h3>
+    <p>下面是单流 C1 从基线到主服务的完整台阶（代码 prompt，256 tok）。横轴是按优化顺序排的：</p>
+
+    <svg viewBox="0 0 560 300" role="img" aria-label="单流 C1 吞吐台阶：基线 46.6 到 DFlash2 TP2 251.6">
+      <defs>
+        <style>
+          .axis{stroke:#cbd5e1;stroke-width:1}
+          .grid{stroke:#e2e8f0;stroke-width:1}
+          .barbase{fill:#94a3b8}
+          .b1{fill:#cbd5e1}.b2{fill:#94a3b8}.b3{fill:#60a5fa}.b4{fill:#3b82f6}.b5{fill:#2563eb}
+          .val{font:600 13px -apple-system,sans-serif;fill:#1e293b;text-anchor:middle}
+          .mult{font:11px -apple-system,sans-serif;fill:#2563eb;text-anchor:middle}
+          .xlab{font:11px -apple-system,sans-serif;fill:#475569;text-anchor:middle}
+          .ytick{font:10px -apple-system,sans-serif;fill:#94a3b8;text-anchor:end}
+        </style>
+      </defs>
+      <!-- gridlines: 0@250, 100@165, 200@80 -->
+      <line class="grid" x1="40" y1="165" x2="520" y2="165"/>
+      <line class="grid" x1="40" y1="80" x2="520" y2="80"/>
+      <line class="axis" x1="40" y1="250" x2="520" y2="250"/>
+      <text class="ytick" x="36" y="254">0</text>
+      <text class="ytick" x="36" y="169">100</text>
+      <text class="ytick" x="36" y="84">200</text>
+      <text class="ytick" x="36" y="22" style="fill:#94a3b8">tok/s</text>
+      <!-- bars: baseline y250 -->
+      <!-- 46.6 h40 y210 x70 -->
+      <rect class="b1" x="70" y="210" width="60" height="40" rx="3"/>
+      <text class="val" x="100" y="202">46.6</text>
+      <text class="mult" x="100" y="188">1.0×</text>
+      <!-- DSpark TP1 110 h93 y157 x155 -->
+      <rect class="b2" x="155" y="157" width="60" height="93" rx="3"/>
+      <text class="val" x="185" y="149">110</text>
+      <text class="mult" x="185" y="135">2.4×</text>
+      <!-- DFlash2 TP1 163.7 h139 y111 x240 -->
+      <rect class="b3" x="240" y="111" width="60" height="139" rx="3"/>
+      <text class="val" x="270" y="103">163.7</text>
+      <text class="mult" x="270" y="89">3.5×</text>
+      <!-- DSpark TP2 171.5 h146 y104 x325 -->
+      <rect class="b4" x="325" y="104" width="60" height="146" rx="3"/>
+      <text class="val" x="355" y="96">171.5</text>
+      <text class="mult" x="355" y="82">3.7×</text>
+      <!-- DFlash2 TP2 251.6 h214 y36 x410 -->
+      <rect class="b5" x="410" y="36" width="60" height="214" rx="3"/>
+      <text class="val" x="440" y="28">251.6</text>
+      <text class="mult" x="440" y="14" style="font-weight:700">5.4×</text>
+      <!-- x labels -->
+      <text class="xlab" x="100" y="268">基线</text><text class="xlab" x="100" y="281">无投机</text>
+      <text class="xlab" x="185" y="268">DSpark</text><text class="xlab" x="185" y="281">TP1</text>
+      <text class="xlab" x="270" y="268">DFlash2</text><text class="xlab" x="270" y="281">TP1</text>
+      <text class="xlab" x="355" y="268">DSpark</text><text class="xlab" x="355" y="281">TP2</text>
+      <text class="xlab" x="440" y="268" style="fill:#1d4ed8;font-weight:600">DFlash2</text><text class="xlab" x="440" y="281" style="fill:#1d4ed8;font-weight:600">TP2</text>
+    </svg>
+
+    <p>台阶拆开看，三个正交的贡献各自独立可归因：</p>
+    <ul>
+      <li><b>加投机（基线 46.6 → DSpark TP1 110，2.4×）</b>：纯投机解码的收益，单卡。等价于「每 ~3.3 token 一次权重读」。</li>
+      <li><b>同 TP1 换 DFlash2（110 → 163.7，+49%）</b>：同卡数、同 TP，只换 draft 架构。增益全部来自 accept len 3.3→5.1。</li>
+      <li><b>同 DFlash2 上 TP2（163.7 → 251.6，+54%）</b>：把最贵的 verify forward 摊到两张卡，单卡 compute 减半，PCIe P2P allreduce 足够便宜。</li>
+    </ul>
+    <p>注意 DSpark TP2（171.5）其实略低于 DFlash2 TP1（163.7）之上——也就是说<b>「TP2 + 弱 draft」不如「TP1 + 强 draft」</b>：单流场景下，先把 accept len 做高（换 DFlash2）比先上 TP 更划算。TP2 是在强 draft 之上再叠一层。</p>
+
+    <h3>3.3 并发吞吐：C1 / C4 / C16 全矩阵</h3>
+    <p>把「无投机基线」也放进并发矩阵，能看到投机解码在高并发下依旧大幅领先（因为它和 batching 是<b>正交</b>的两个杠杆）：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>配置（均 FP8 · flashinfer）</th><th class="num">C1</th><th class="num">C4</th><th class="num">C16</th></tr></thead>
+        <tbody>
+          <tr><td>无投机（基线）</td><td class="num">46</td><td class="num">176</td><td class="num">632</td></tr>
+          <tr><td>DSpark TP1</td><td class="num">110</td><td class="num">735</td><td class="num">1832</td></tr>
+          <tr><td>DFlash2 TP1</td><td class="num">163.7</td><td class="num">1128</td><td class="num">2826</td></tr>
+          <tr><td>DSpark TP2</td><td class="num">171.5</td><td class="num">1082</td><td class="num">2402</td></tr>
+          <tr><td><b>DFlash2 TP2（主服务）</b></td><td class="num"><b>251.6</b></td><td class="num"><b>1626</b></td><td class="num"><b>3524</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <svg viewBox="0 0 640 230" role="img" aria-label="C1/C4/C16 三组柱状对比，四种配置">
+      <defs>
+        <style>
+          .ct{font:600 13px -apple-system,sans-serif;fill:#1e293b;text-anchor:middle}
+          .cs{font:10px -apple-system,sans-serif;fill:#64748b;text-anchor:middle}
+          .base{stroke:#cbd5e1;stroke-width:1}
+          .v{font:9px -apple-system,sans-serif;fill:#475569;text-anchor:middle}
+          .d1{fill:#94a3b8}.f1{fill:#60a5fa}.d2{fill:#64748b}.f2{fill:#2563eb}
+          .lg{font:10px -apple-system,sans-serif;fill:#475569}
+        </style>
+      </defs>
+      <!-- Section C1 : x 20-200 -->
+      <text class="ct" x="110" y="18">C1</text>
+      <line class="base" x1="24" y1="170" x2="196" y2="170"/>
+      <rect class="d1" x="31" y="115" width="32" height="55" rx="2"/><text class="v" x="47" y="111">110</text>
+      <rect class="f1" x="73" y="88" width="32" height="82" rx="2"/><text class="v" x="89" y="84">164</text>
+      <rect class="d2" x="115" y="84" width="32" height="86" rx="2"/><text class="v" x="131" y="80">172</text>
+      <rect class="f2" x="157" y="44" width="32" height="126" rx="2"/><text class="v" x="173" y="40">252</text>
+      <text class="cs" x="110" y="184">tok/s</text>
+      <!-- Section C4 : x 220-420 -->
+      <text class="ct" x="310" y="18">C4</text>
+      <line class="base" x1="224" y1="170" x2="396" y2="170"/>
+      <rect class="d1" x="231" y="114" width="32" height="56" rx="2"/><text class="v" x="247" y="110">735</text>
+      <rect class="f1" x="273" y="84" width="32" height="86" rx="2"/><text class="v" x="289" y="80">1128</text>
+      <rect class="d2" x="315" y="87" width="32" height="83" rx="2"/><text class="v" x="331" y="83">1082</text>
+      <rect class="f2" x="357" y="46" width="32" height="124" rx="2"/><text class="v" x="373" y="42">1626</text>
+      <text class="cs" x="310" y="184">tok/s</text>
+      <!-- Section C16 : x 440-620 -->
+      <text class="ct" x="510" y="18">C16</text>
+      <line class="base" x1="444" y1="170" x2="616" y2="170"/>
+      <rect class="d1" x="451" y="104" width="32" height="66" rx="2"/><text class="v" x="467" y="100">1832</text>
+      <rect class="f1" x="493" y="68" width="32" height="102" rx="2"/><text class="v" x="509" y="64">2826</text>
+      <rect class="d2" x="535" y="83" width="32" height="87" rx="2"/><text class="v" x="551" y="79">2402</text>
+      <rect class="f2" x="577" y="43" width="32" height="127" rx="2"/><text class="v" x="593" y="39">3524</text>
+      <text class="cs" x="510" y="184">tok/s</text>
+      <!-- legend -->
+      <rect class="d1" x="40" y="204" width="12" height="12" rx="2"/><text class="lg" x="58" y="214">DSpark TP1</text>
+      <rect class="f1" x="150" y="204" width="12" height="12" rx="2"/><text class="lg" x="168" y="214">DFlash2 TP1</text>
+      <rect class="d2" x="270" y="204" width="12" height="12" rx="2"/><text class="lg" x="288" y="214">DSpark TP2</text>
+      <rect class="f2" x="380" y="204" width="12" height="12" rx="2"/><text class="lg" x="398" y="214">DFlash2 TP2（主）</text>
+    </svg>
+
+    <p>两个观察：</p>
+    <ul>
+      <li><b>TP2 在单流收益最大（C1 +54%），并发越高收益收窄</b>：DFlash2 TP1→TP2 在 C1 +54%、C4 +44%、C16 +25%。高并发时两卡已接近饱和，TP 的 PCIe 通信开销占比上升。所以<b>交互式 / Agent 单流场景 TP2 最香，纯高吞吐批量场景 TP1 的显存和并发上限反而更从容</b>。</li>
+      <li><b>DFlash2 在所有并发档都压过 DSpark</b>（C1 +49%、C4 +53%、C16 +54%），且<b>高并发下优势不衰减</b>——因为它的 selector 折进了 CUDA graph，没有随 batch 放大的额外验证开销。</li>
+    </ul>
+
+    <h3>3.4 为什么 DFlash2 快：accept len 是唯一的根指标</h3>
+    <p>把 DSpark 和 DFlash2 的差异压到一个数上，就是 accept length（平均每次 verify 接受几个 token）。TP2 下 DFlash2 <b>~5.1</b> vs DSpark <b>~3.3</b>（+55%）。accept len 越高，「一次权重读换到的 token」越多，decode 吞吐近似线性受益。它高的原因拆成两块：<b>更长的 verify 窗口</b>（block 8 vs 7）+ <b>更准的候选</b>（目标 lm_head top_k=16 vs 独立 Markov 头）。两者叠加，就是 §3.2 台阶里那 46% 的全部来源。没有玄学，就是一个指标。</p>
+
+    <h3>3.5 TTFT 与长上下文</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>场景</th><th>DSpark TP1</th><th>DFlash2 TP2（主）</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>TTFT（2k prompt）</td><td class="num">~62 ms</td><td class="num">≈ 60 ms</td><td>GDN 线性注意力 O(n) prefill 的红利，首 token 极快</td></tr>
+          <tr><td>8K 上下文 C1</td><td class="num">28.6</td><td class="num">33.7</td><td>TP2 +18%</td></tr>
+          <tr><td>57K 上下文 C1</td><td class="num">3.8（输出退化，仅 29 tok）</td><td class="num">9.4（正常）</td><td>TP1 长上下文质量退化（FP8+TP1 已知问题），TP2 稳定</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>TTFT 低是混合 GDN 架构送的红利：48 层线性注意力的 prefill 是 O(n)（状态固定大小），只有 16 层全注意力是 O(n²)。所以 2k prompt 首 token 才 60ms 量级——这是「模型架构」给的，不是「部署」给的，但值得在选型时记住。</p>
+
+    <h3>3.6 与社区数据交叉验证 + 实测复核</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>来源</th><th>配置</th><th class="num">C1 (tok/s)</th></tr></thead>
+        <tbody>
+          <tr><td>社区 wiki（Max-Q 350W 卡）</td><td>TP2 SGLang / EAGLE / FP8</td><td class="num">141</td></tr>
+          <tr><td>社区 wiki（Max-Q 350W 卡）</td><td>TP2 vLLM / MTP3 / FP8</td><td class="num">120.8</td></tr>
+          <tr><td><b>本次实测（Server Ed 600W）</b></td><td><b>TP2 SGLang / DFlash2 / FP8</b></td><td class="num"><b>251.6</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>本次 251.6 tok/s 高于社区记录的 141（EAGLE），除 DFlash2 更强外，本机是 <b>Server Edition（600W）</b>而非社区的 Max-Q（350W）卡，供电/持续性能更高。两个因素都朝同一个方向，不矛盾。社区 DFlash2 论文在 B200 上报 4.24–4.76×（相对 MTP3 基线），与本机「相对无投机基线 5.4×」量级一致（注意基线不同，不直接比）。</p>
+    <div class="callout">
+      <span class="k">复核（2026-08-20 在线服务实跑）</span>
+      <p style="margin:0.4rem 0 0">报告写成后又在生产服务（DFlash2 TP2 @ 8000）上现跑了一遍 <code>benchmark.py</code>：<b>C1 234.4 / C4 1653 / C16 3479 tok/s</b>。C1 相对文档值 251.6 略低，落在同配置多次运行的波动带（234–251）内；C4/C16 与文档值高度一致。结论：<b>数字可复现，无异常</b>。</p>
+    </div>
+
+    <h2>4. 九个部署坑（这篇最值钱的部分）</h2>
+    <p>坑都踩过并定位到根因，按「启动会死 → 跑得慢 → 装不上」分类。</p>
+
+    <h3>4.1 启动直接失败</h3>
+    <div class="pit"><b>坑 1 · SM120 被判「sm75 or higher」</b><br>
+    flashinfer 的 <code>get_cuda_version()</code> 优先查 <code>CUDA_HOME/bin/nvcc</code>，没设时回落到系统 <code>/usr/local/cuda</code>（本机 12.8）。而 SM12.x 要求 CUDA ≥ 12.9，于是编译目标为空、报 "requires sm75 or higher"。修复：<code>export CUDA_HOME=/usr/local/cuda-13.2</code>（指到 ≥12.9 的 toolkit）。TP1 脚本恰好设了所以能跑，TP2 新脚本漏了才暴露——<b>同一个 venv，TP1 能跑不代表 TP2 能跑</b>，因为触发路径不同。</div>
+    <div class="pit"><b>坑 2 · <code>ninja not found</code></b><br>
+    直接调 <code>.venv/bin/python</code> 而没 <code>source .venv/bin/activate</code>，venv 里 pip 装的 ninja 不在 PATH。TP2 的 prefill CUDA graph 捕获要触发 flashinfer JIT 编译，需要 ninja。修复：脚本里 <code>source .venv/bin/activate</code>（或把 venv bin 加进 PATH）。</div>
+    <div class="pit"><b>坑 3 · <code>custom_all_reduce.cuh:508 invalid argument</code>（最隐蔽）</b><br>
+    <code>PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True</code> 分配的显存来自 CUDA VMM（<code>cuMemCreate</code>），<b>无法被 <code>cudaIpcGetMemHandle</code> 导出</b>。SGLang 的 custom allreduce 在 CUDA graph capture 时注册 IPC buffer → 返回 invalid argument。<b>单卡 TP1 不触发（没有跨卡 allreduce），TP2 才炸</b>。修复：TP 场景<b>不要</b>设 expandable_segments。这条最反直觉——一个「省显存碎片」的常用设置，在 TP 下是定时炸弹。</div>
+
+    <h3>4.2 版本 / 依赖</h3>
+    <div class="pit"><b>坑 4 · DFlash2 官方 0.5.17 里没有</b><br>
+    候选选择器（<code>CandidateSelector</code>/<code>selector_rank</code>/<code>conv_group</code>）是 8/19 才合进 master 的。0.5.17 启动 DFlash2 会因缺 EntryClass 失败。修复：隔离 venv 装 <code>git+https://github.com/sgl-project/sglang</code>（master），不动生产 0.5.17。</div>
+    <div class="pit"><b>坑 5 · flashinfer-cubin 版本不匹配</b><br>
+    flashinfer 0.6.15.post1 与 flashinfer-cubin 0.6.13 不一致（PyPI 没有 .post1 的 cubin 包）。<code>export FLASHINFER_DISABLE_VERSION_CHECK=1</code> 绕过；真正升级时应同步 cubin。</div>
+    <div class="pit"><b>坑 6 · cuDNN 版本检查不认 9.16/9.19</b><br>
+    SGLang 的 cuDNN 版本白名单不识别较新版本。<code>export SGLANG_DISABLE_CUDNN_CHECK=1</code>。</div>
+
+    <h3>4.3 环境 / 运维</h3>
+    <div class="pit"><b>坑 7 · 代理下 <code>huggingface_hub</code> 报 <code>FileMetadataError</code></b><br>
+    公司出口代理会<b>剥掉 HEAD 响应的 <code>Content-Length</code></b>，而 <code>huggingface_hub</code> 解析文件 metadata 时三项（etag / X-Repo-Commit / Content-Length）缺一即抛错；hf-mirror 又会 308 回源再跳 XET CDN，多跳组合极脆弱。<code>HF_HUB_DISABLE_XET=1</code> 也救不了（问题发生在更早的 HEAD 解析）。修复：改用 <b>hfd.sh</b>（curl 拉文件清单 + aria2c 多线程断点续传，<b>完全不经过 hub 库</b>）+ <code>HF_ENDPOINT=https://hf-mirror.com</code>。2.7GB DSpark 权重 ~15 分钟下完。<b>校验别只比文件大小</b>——用 <code>safetensors.safe_open</code> 读 tensor 数（DSpark 62 个）更能确认没损坏。</div>
+    <div class="pit"><b>坑 8 · SELinux 拒绝 system systemd 跑 <code>/data</code> 下的 venv python</b><br>
+    最初想做 system 级 service，SELinux Enforcing 拒绝从 <code>/data</code> 挂载点执行 uv venv 的 python（<code>Permission denied</code>，203/EXEC）。修复：改用<b>用户级 systemd</b>（以普通用户身份跑，无 SELinux 限制）+ <code>loginctl enable-linger</code>（登录后不随登出杀掉）。</div>
+    <div class="pit"><b>坑 9 · 后台进程被 shell 退出杀掉</b><br>
+    直接 <code>&amp;</code> 后台起 SGLang，shell/工具边界一退出进程组就没了。修复：早期用 <code>at now</code>（atd daemon 持有进程）；最终统一收敛到<b>用户级 systemd</b>（带自动重启），一劳永逸。</div>
+
+    <h2>5. 运维体系：用户级 systemd</h2>
+    <p>最终主服务收敛成一个<b>用户级 systemd unit</b>（<code>sglang-dflash2</code>），这是「能长期跑」的关键，而不是一个 nohup 脚本：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>能力</th><th>配置</th></tr></thead>
+        <tbody>
+          <tr><td>自动重启</td><td><code>Restart=on-failure</code> + <code>RestartSec=5</code> + <code>StartLimitBurst=10/50s</code>（防崩溃风暴）</td></tr>
+          <tr><td>开机自启</td><td><code>systemctl --user enable</code> + <code>loginctl enable-linger &lt;user&gt;</code>（Linger=yes 已验证）</td></tr>
+          <tr><td>优雅停止</td><td><code>TimeoutStopSec=30</code>（先 SIGTERM 30s 再 SIGKILL）</td></tr>
+          <tr><td>双路日志</td><td>文件（stdout/stderr 落 <code>logs/</code>）+ journald（<code>Storage=persistent</code>）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>实测：SIGKILL 主进程 → 5s 内自动拉起 → ~45s 恢复监听 → API 200，C1 重启后仍 276 tok/s 一致。运维一键：<code>./ops/sglang_ops.sh status|restart|logs|tail|enable</code>。</p>
+    <p>关键环境变量（已写进 unit，避免每次手设）：</p>
+    <pre><code>Environment=CUDA_VISIBLE_DEVICES=6,7
+Environment=CUDA_HOME=/usr/local/cuda-13.2        # 坑1：SM120 必需
+Environment=SGLANG_DISABLE_CUDNN_CHECK=1           # 坑6
+Environment=FLASHINFER_DISABLE_VERSION_CHECK=1     # 坑5
+Environment=HF_HUB_DISABLE_XET=1
+Environment=HF_ENDPOINT=https://hf-mirror.com
+# 注意：不要设 PYTORCH_CUDA_ALLOC_CONF=expandable_segments   # 坑3</code></pre>
+
+    <h2>6. 结论与选型建议</h2>
+    <p>把整件事收成几条可迁移的判断：</p>
+    <ol>
+      <li><b>先认卡再选栈</b>：Blackwell 分 SM120（工作站）/ SM100（数据中心），FP8 栈不通用。看到 SM120 就按「要自己 JIT + 工具链 ≥ CUDA 12.9 + attention 只能 flashinfer」来选版本，别抄 B200 的配方。</li>
+      <li><b>杠杆要打在带宽上</b>：27B 单流 decode 是带宽受限，继续抠 FP8 GEMM 对单流无效；<b>投机解码</b>（摊薄权重读）才是单流的杠杆，<b>FP8 + batching</b> 才是高并发的杠杆，两者正交、都要上。</li>
+      <li><b>accept len 是投机解码的北极星</b>：换 draft 架构时只看这一个指标。DFlash2（目标 lm_head 出候选 + 更长窗口）把 accept len 从 3.3 拉到 5.1，就是全部 46% 增益的来源。</li>
+      <li><b>TP2 给单流，TP1 给批量</b>：交互 / Agent 单流选 TP2（+54%）；纯高吞吐批量选 TP1（并发上限和 KV 容量更从容，TP 通信开销更小）。按 PIX 卡对选 TP 卡。</li>
+      <li><b>长期跑就上 systemd</b>：nohup 不是部署。用户级 systemd（绕 SELinux）+ linger + 自动重启 + 双路日志，才是「服务」而不是「进程」。</li>
+    </ol>
+
+    <h2>7. 附录</h2>
+    <h3>7.1 主服务启动命令（去敏，路径为示意）</h3>
+    <pre><code>CUDA_VISIBLE_DEVICES=6,7 \
+CUDA_HOME=/usr/local/cuda-13.2 \
+SGLANG_DISABLE_CUDNN_CHECK=1 FLASHINFER_DISABLE_VERSION_CHECK=1 \
+python -m sglang.launch_server \
+  --model-path ~/sglang/models/Qwen3.8-27B-FP8 \
+  --host 0.0.0.0 --port 8000 --tp-size 2 \
+  --attention-backend flashinfer --sampling-backend flashinfer \
+  --kv-cache-dtype fp8_e4m3 --chunked-prefill-size 2048 \
+  --mem-fraction-static 0.88 \
+  --mamba-full-memory-ratio 6.08 --mamba-ssm-dtype bfloat16 \
+  --mamba-radix-cache-strategy extra_buffer \
+  --speculative-algorithm DFLASH \
+  --speculative-draft-model-path ~/sglang/models/Qwen3.8-27B-DFlash2 \
+  --speculative-draft-attention-backend flashinfer \
+  --speculative-draft-model-quantization unquant \
+  --speculative-dflash-block-size 8 \
+  --served-model-name Qwen3.8-27B-FP8 \
+  --reasoning-parser qwen3 --tool-call-parser qwen3_coder \
+  --trust-remote-code</code></pre>
+
+    <h3>7.2 客户端接入（OpenAI 兼容）</h3>
+    <pre><code># base_url 换成实际节点地址（内网示例 192.0.2.1，占位）
+export OPENAI_API_KEY="not-needed"
+export OPENAI_BASE_URL="http://192.0.2.1:8000/v1"
+
+from openai import OpenAI
+c = OpenAI()  # 自动读上面两个环境变量
+r = c.chat.completions.create(
+    model="Qwen3.8-27B-FP8",
+    messages=[{"role": "user", "content": "解释什么是 GPU Roofline 模型"}],
+    temperature=0.6, max_tokens=1024,
+)
+print(r.choices[0].message.content)          # 正文
+print(r.choices[0].message.reasoning_content)  # 思维链（Qwen3 系）</code></pre>
+    <p>同样支持 Anthropic <code>/v1/messages</code>（Claude Code 直连）。鉴权未开（内网可信），需要时加 <code>--api-key</code>。推理参数建议：<code>temperature=0.6</code>（对话/代码）、<code>0</code>（抽取/分类确定性），交互场景开 <code>stream=true</code>。</p>
+
+    <h3>7.3 数据口径与来源</h3>
+    <ul class="foot">
+      <li>所有吞吐为<b>代码 prompt / 256 token 输出</b>的聚合值；单流 C1 为 5 次均值。投机解码吞吐随 prompt 领域波动（见 §3.1 口径提醒）。</li>
+      <li>「无投机基线 46.6」来自单流 512-token 测量；并发矩阵基线 46/176/632 为 256-token 同口径。</li>
+      <li>主服务实测复核值（2026-08-20）：C1 234.4 / C4 1653 / C16 3479，与文档值同波动带。</li>
+      <li>本文已去敏：内网 IP 以 <code>192.0.2.1</code>（RFC 5737 保留段）占位，部署路径以 <code>~/sglang</code> 示意，主机名 / 用户名不出现。模型仓库（<code>Qwen/Qwen3.8-27B-FP8</code>、<code>RadixArk/Qwen3.8-27B-DSpark</code>、<code>z-lab/Qwen3.8-27B-DFlash2</code>）与 hfd.sh gist 均为公开来源。</li>
+    </ul>
+
+  </main>
+</body>
+</html>

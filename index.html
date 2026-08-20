@@ -87,6 +87,12 @@
 
   <div class="page-list">
     <article class="page-entry">
+      <time datetime="2026-08-20">2026-08-20</time>
+      <h2><a href="/pages/2026-08-20-rtx-pro-6000-sglang-dflash2.html">RTX PRO 6000 Blackwell 跑 Qwen3.8-27B-FP8：从 46 到 251 tok/s 的 SGLang 部署</a></h2>
+      <p class="summary">在工作站级 Blackwell（SM120，非数据中心 SM100）上用 SGLang 部署 Qwen3.8-27B-FP8 混合 GDN 模型。第一性讲清三件事：SM120 是部署第一道墙、投机解码才是 GDDR7 带宽受限单流的正确杠杆、DFlash2 凭 accept len 5.1 把单流 decode 推到 5.4×。附 TP1/TP2 × DSpark/DFlash2 全矩阵实测、在线复核与 9 个部署坑。</p>
+    </article>
+
+    <article class="page-entry">
       <time datetime="2026-08-01">2026-08-01</time>
       <h2><a href="/pages/2026-08-01-wezterm-kitty-graphics.html">WezTerm kitty graphics 显示不出图片？把这四个坑都排掉</a></h2>
       <p class="summary">想让 WezTerm 用 kitty graphics 协议显示图片，结果一路踩坑：序列漏下划线、stable 版本实现是坏的、enable_kitty_graphics 默认值误判、term 默认值。附 APC query 探测诊断法和换 nightly 的步骤。</p>
